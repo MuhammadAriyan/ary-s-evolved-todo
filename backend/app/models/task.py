@@ -1,6 +1,7 @@
 """Task model for todo items."""
 from sqlmodel import SQLModel, Field, Column
-from sqlalchemy import ARRAY, String
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy import String
 from datetime import datetime, date
 from typing import Optional, List
 
