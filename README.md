@@ -1,6 +1,82 @@
-# In-Memory Console Todo App
+# Full-Stack Web Todo Application
 
-A command-line todo application built with Python standard library. Features full CRUD operations, priorities, tags, search, filter, and sort capabilities.
+A production-ready full-stack web application with authentication, todo management, tags, calendar view, and recurring tasks. Built with Next.js 15+, FastAPI, and Neon PostgreSQL.
+
+## Phase II: Full-Stack Web Application (Current)
+
+This repository contains both the original console app (Phase I) and the new full-stack web application (Phase II).
+
+## Architecture
+
+**Monorepo Structure:**
+- `backend/` - FastAPI backend with SQLModel ORM
+- `frontend/` - Next.js 15+ with TypeScript and shadcn/ui
+- `docker/` - Docker Compose configuration
+- `specs/` - Feature specifications and documentation
+- `src/` - Original Phase I console app
+
+**Technology Stack:**
+- **Frontend**: Next.js 15+, React 19, TypeScript, shadcn/ui, Tailwind CSS, Better Auth, TanStack Query
+- **Backend**: FastAPI, Python 3.12+, SQLModel, Alembic, PyJWT, APScheduler
+- **Database**: Neon PostgreSQL (serverless)
+- **Authentication**: Better Auth with JWT (Email/Password + Google OAuth)
+
+## Quick Start (Phase II Web App)
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Python 3.12+ and UV package manager
+- Neon PostgreSQL account
+- Google OAuth credentials (optional)
+
+### Setup
+
+1. **Backend setup:**
+   ```bash
+   cd backend
+   cp .env.example .env
+   # Edit .env with your database URL and JWT secret
+   uv pip install -e ".[dev]"
+   alembic upgrade head
+   uvicorn app.main:app --reload
+   ```
+
+2. **Frontend setup:**
+   ```bash
+   cd frontend
+   cp .env.local.example .env.local
+   # Edit .env.local with your configuration
+   npm install
+   npm run dev
+   ```
+
+3. **Access the application:**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+
+### Docker Setup (Alternative)
+
+```bash
+cd docker
+docker-compose up -d
+```
+
+## Documentation
+
+- **Quickstart Guide**: `specs/001-fullstack-web-app/quickstart.md`
+- **API Contracts**: `specs/001-fullstack-web-app/contracts/`
+- **Implementation Plan**: `specs/001-fullstack-web-app/plan.md`
+- **Task Breakdown**: `specs/001-fullstack-web-app/tasks.md`
+
+## Phase I: Console App
+
+See the original console app in `src/` directory. Run with:
+
+```bash
+python src/main.py
+```
 
 ## Features
 

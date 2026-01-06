@@ -1,0 +1,424 @@
+# Deployment Guide
+
+This guide covers deploying the full-stack todo application to production environments.
+
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Database Setup (Neon)](#database-setup-neon)
+3. [Backend Deployment](#backend-deployment)
+4. [Frontend Deployment](#frontend-deployment)
+5. [Environment Variables](#environment-variables)
+6. [Post-Deployment](#post-deployment)
+
+## Prerequisites
+
+- Neon PostgreSQL account
+- Vercel account (for frontend)
+- Railway/Render account (for backend)
+- Google OAuth credentials (optional)
+- Domain name (optional)
+
+## Database Setup (Neon)
+
+### 1. Create Neon Project
+
+1. Go to [Neon Console](https://console.neon.tech/)
+2. Click "New Project"
+3. Choose a name: `ary-todo-app`
+4. Select region closest to your users
+5. Copy the connection string
+
+### 2. Configure Database
+
+```sql
+-- Neon automatically creates a database
+-- Connection string format:
+postgresql://user:password@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+```
+
+### 3. Run Migrations
+
+```bash
+cd backend
+export DATABASE_URL="your-neon-connection-string"
+alembic upgrade head
+```
+
+## Backend Deployment
+
+### Option 1: Railway
+
+1. **Create New Project**
+   - Go to [Railway](https://railway.app/)
+   - Click "New Project" → "Deploy from GitHub repo"
+   - Select your repository
+
+2. **Configure Service**
+   - Root directory: `backend`
+   - Build command: `pip install -r requirements.txt`
+   - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+3. **Environment Variables**
+   ```
+   DATABASE_URL=postgresql://...
+   JWT_SECRET=your-production-jwt-secret
+   JWT_ALGORITHM=HS256
+   JWT_EXPIRATION_HOURS=24
+   CORS_ORIGINS=https://yourdomain.com
+   BETTER_AUTH_SECRET=your-production-auth-secret
+   APP_ENV=production
+   LOG_LEVEL=INFO
+   ```
+
+4. **Deploy**
+   - Railway will automatically deploy
+   - Note the public URL: `https://your-app.railway.app`
+
+### Option 2: Render
+
+1. **Create Web Service**
+   - Go to [Render Dashboard](https://dashboard.render.com/)
+   - Click "New" → "Web Service"
+   - Connect your GitHub repository
+
+2. **Configure Service**
+   - Name: `ary-todo-backend`
+   - Root directory: `backend`
+   - Environment: `Python 3`
+   - Build command: `pip install -r requirements.txt`
+   - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+3. **Environment Variables**
+   - Add same variables as Railway option
+
+4. **Deploy**
+   - Click "Create Web Service"
+   - Note the public URL: `https://your-app.onrender.com`
+
+### Option 3: Docker (Self-hosted)
+
+```bash
+cd backend
+docker build -t ary-todo-backend .
+docker run -p 8000:8000 \
+  -e DATABASE_URL="postgresql://..." \
+  -e JWT_SECRET="your-secret" \
+  ary-todo-backend
+```
+
+## Frontend Deployment
+
+### Vercel (Recommended)
+
+1. **Import Project**
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Click "Add New" → "Project"
+   - Import your GitHub repository
+
+2. **Configure Project**
+   - Framework Preset: `Next.js`
+   - Root Directory: `frontend`
+   - Build Command: `npm run build`
+   - Output Directory: `.next`
+
+3. **Environment Variables**
+   ```
+   DATABASE_URL=postgresql://...
+   BETTER_AUTH_SECRET=your-production-auth-secret
+   BETTER_AUTH_URL=https://yourdomain.com
+   NEXT_PUBLIC_API_URL=https://your-backend.railway.app
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   NODE_ENV=production
+   ```
+
+4. **Deploy**
+   - Click "Deploy"
+   - Vercel will build and deploy automatically
+   - Note the deployment URL
+
+5. **Custom Domain (Optional)**
+   - Go to Project Settings → Domains
+   - Add your custom domain
+   - Update DNS records as instructed
+
+### Netlify (Alternative)
+
+1. **Import Project**
+   - Go to [Netlify Dashboard](https://app.netlify.com/)
+   - Click "Add new site" → "Import an existing project"
+
+2. **Configure Build**
+   - Base directory: `frontend`
+   - Build command: `npm run build`
+   - Publish directory: `.next`
+
+3. **Environment Variables**
+   - Add same variables as Vercel option
+
+4. **Deploy**
+   - Click "Deploy site"
+
+## Environment Variables
+
+### Backend Production Variables
+
+```env
+# Database
+DATABASE_URL=postgresql://user:password@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+
+# JWT
+JWT_SECRET=use-a-strong-random-secret-at-least-32-characters
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+
+# CORS
+CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+
+# Auth
+BETTER_AUTH_SECRET=use-a-strong-random-secret-at-least-32-characters
+BETTER_AUTH_URL=https://yourdomain.com
+
+# App
+APP_ENV=production
+LOG_LEVEL=INFO
+
+# Scheduler
+SCHEDULER_TIMEZONE=UTC
+```
+
+### Frontend Production Variables
+
+```env
+# Database (for Better Auth)
+DATABASE_URL=postgresql://user:password@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+
+# Auth
+BETTER_AUTH_SECRET=use-a-strong-random-secret-at-least-32-characters
+BETTER_AUTH_URL=https://yourdomain.com
+
+# API
+NEXT_PUBLIC_API_URL=https://your-backend.railway.app
+
+# OAuth (optional)
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# App
+NODE_ENV=production
+```
+
+### Generating Secrets
+
+```bash
+# Generate random secrets
+openssl rand -base64 32
+
+# Or use Python
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+## Post-Deployment
+
+### 1. Verify Backend
+
+```bash
+# Health check
+curl https://your-backend.railway.app/health
+
+# API documentation
+open https://your-backend.railway.app/docs
+```
+
+### 2. Verify Frontend
+
+```bash
+# Open in browser
+open https://yourdomain.com
+
+# Test authentication
+# - Register new user
+# - Login with email/password
+# - Test Google OAuth (if configured)
+```
+
+### 3. Test Core Features
+
+- [ ] User registration and login
+- [ ] Create, read, update, delete tasks
+- [ ] Tag filtering
+- [ ] Calendar view
+- [ ] Recurring task generation (wait 24h or trigger manually)
+
+### 4. Monitor Logs
+
+**Railway:**
+```bash
+railway logs
+```
+
+**Render:**
+- View logs in Render dashboard
+
+**Vercel:**
+- View logs in Vercel dashboard
+
+### 5. Set Up Monitoring
+
+**Backend Monitoring:**
+- Add Sentry for error tracking
+- Set up uptime monitoring (UptimeRobot, Pingdom)
+- Configure log aggregation (Logtail, Papertrail)
+
+**Frontend Monitoring:**
+- Vercel Analytics (built-in)
+- Google Analytics
+- Sentry for frontend errors
+
+### 6. Database Backups
+
+**Neon:**
+- Automatic backups included
+- Configure backup retention in Neon console
+- Test restore procedure
+
+### 7. Security Checklist
+
+- [ ] HTTPS enabled on all endpoints
+- [ ] CORS configured correctly
+- [ ] JWT secrets are strong and unique
+- [ ] Database credentials are secure
+- [ ] Environment variables are not committed to git
+- [ ] Rate limiting configured (optional)
+- [ ] SQL injection protection (SQLModel handles this)
+- [ ] XSS protection (React handles this)
+
+## Troubleshooting
+
+### Backend Issues
+
+**Database Connection Errors:**
+```bash
+# Verify connection string
+psql "postgresql://user:password@host/db?sslmode=require"
+
+# Check Neon status
+# Visit https://neon.tech/status
+```
+
+**CORS Errors:**
+```python
+# Verify CORS_ORIGINS in backend/.env
+CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+```
+
+**Migration Errors:**
+```bash
+# Reset migrations (development only!)
+alembic downgrade base
+alembic upgrade head
+```
+
+### Frontend Issues
+
+**API Connection Errors:**
+```bash
+# Verify NEXT_PUBLIC_API_URL
+echo $NEXT_PUBLIC_API_URL
+
+# Test backend health
+curl $NEXT_PUBLIC_API_URL/health
+```
+
+**Authentication Errors:**
+```bash
+# Verify secrets match between frontend and backend
+# BETTER_AUTH_SECRET must be identical
+```
+
+**Build Errors:**
+```bash
+# Clear Next.js cache
+rm -rf .next
+npm run build
+```
+
+## Scaling Considerations
+
+### Database
+
+- Neon automatically scales
+- Monitor connection pool usage
+- Consider read replicas for high traffic
+
+### Backend
+
+- Railway/Render auto-scale with traffic
+- Configure horizontal scaling if needed
+- Add Redis for caching (optional)
+
+### Frontend
+
+- Vercel automatically scales globally
+- CDN included by default
+- No additional configuration needed
+
+## Cost Estimates
+
+### Development/Hobby Tier (Free)
+
+- **Neon**: Free tier (0.5 GB storage, 1 compute unit)
+- **Railway**: $5/month credit (enough for small apps)
+- **Vercel**: Free tier (100 GB bandwidth)
+- **Total**: ~$0-5/month
+
+### Production Tier
+
+- **Neon**: ~$20/month (Pro plan)
+- **Railway**: ~$20/month (Pro plan)
+- **Vercel**: ~$20/month (Pro plan)
+- **Total**: ~$60/month
+
+## Rollback Procedure
+
+### Backend Rollback
+
+**Railway:**
+```bash
+# Rollback to previous deployment
+railway rollback
+```
+
+**Render:**
+- Use Render dashboard to rollback
+
+### Frontend Rollback
+
+**Vercel:**
+- Go to Deployments
+- Find previous working deployment
+- Click "Promote to Production"
+
+### Database Rollback
+
+```bash
+# Rollback one migration
+alembic downgrade -1
+
+# Rollback to specific version
+alembic downgrade <revision>
+```
+
+## Support
+
+For deployment issues:
+- Check logs first
+- Review environment variables
+- Verify database connectivity
+- Test API endpoints manually
+- Contact support: support@example.com
+
+---
+
+**Last Updated**: 2026-01-06
