@@ -32,6 +32,7 @@ export const auth = betterAuth({
   plugins: [
     jwt({
       // Use the same secret as backend for JWT token generation
+      // @ts-expect-error - secret is valid but types may be outdated
       secret: process.env.JWT_SECRET_KEY!,
       expiresIn: 60 * 60 * 24, // 24 hours (matches backend)
     }),

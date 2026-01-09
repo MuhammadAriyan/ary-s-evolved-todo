@@ -1,6 +1,8 @@
 """Task API endpoints."""
 from fastapi import APIRouter, HTTPException, status, Query
 from sqlmodel import select
+from sqlalchemy import cast, text
+from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from typing import List, Optional
 from datetime import datetime
 
@@ -25,7 +27,8 @@ async def list_tasks(
 
     # Apply filters
     if tag:
-        query = query.where(Task.tags.contains([tag]))
+        # Cast the array to TEXT[] to match the column type
+        query = query.where(Task.tags.contains(cast([tag], ARRAY(TEXT))))
     if priority:
         query = query.where(Task.priority == priority)
     if completed is not None:

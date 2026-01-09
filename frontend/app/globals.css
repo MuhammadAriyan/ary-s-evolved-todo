@@ -23,30 +23,30 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 222.2 84% 4.9%;
   --radius: 0.5rem;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
+  /* Sky-Aura Glass Variables */
+  /* Glass Properties */
+  --glass-bg: rgba(0, 0, 0, 0.3);
+  --glass-bg-hover: rgba(0, 0, 0, 0.4);
+  --glass-border: rgba(153, 41, 234, 0.3);
+  --glass-blur: 12px;
+
+  /* Glow Effects */
+  --cyan-glow: rgba(153, 41, 234, 0.3);
+  --aqua-glow: rgba(255, 95, 207, 0.2);
+  --white-glow: rgba(250, 235, 146, 0.4);
+
+  /* Color Palette */
+  --sky-cyan: #9929EA;
+  --soft-aqua: #FF5FCF;
+  --misty-white: #FAEB92;
+  --misty-green: #FAEB92;
+
+  /* Animation Durations */
+  --duration-float: 4s;
+  --duration-breathe: 3s;
+  --duration-gradient: 12s;
+  --duration-entry: 1.5s;
 }
 
 @layer base {
@@ -55,5 +55,107 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Visible focus states with cyan glow */
+  *:focus-visible {
+    outline: 2px solid var(--sky-cyan);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--cyan-glow);
+  }
+}
+
+@layer components {
+  /* Glass Card Component */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 1.5rem;
+    box-shadow: 0 0 20px var(--cyan-glow), 0 0 40px var(--aqua-glow);
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    background: var(--glass-bg-hover);
+    box-shadow: 0 0 30px var(--cyan-glow), 0 0 60px var(--aqua-glow);
+  }
+
+  /* Glass Button Component */
+  .glass-button {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    padding: 0.75rem 1.5rem;
+    color: #0c4a6e;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px var(--cyan-glow);
+  }
+
+  .glass-button:hover {
+    background: var(--glass-bg-hover);
+    box-shadow: 0 0 20px var(--cyan-glow), 0 0 40px var(--aqua-glow);
+    transform: translateY(-2px);
+  }
+
+  .glass-button:active {
+    transform: translateY(0);
+    box-shadow: 0 0 10px var(--cyan-glow);
+  }
+
+  /* Text Styles */
+  .text-glass {
+    color: #0c4a6e;
+    font-weight: 500;
+  }
+
+  .text-glass-secondary {
+    color: #0369a1;
+    font-weight: 400;
+  }
+
+  /* Graceful degradation for backdrop-filter */
+  @supports not (backdrop-filter: blur(12px)) {
+    .glass-card,
+    .glass-button {
+      background: rgba(224, 242, 254, 0.9);
+    }
+  }
+}
+
+@layer utilities {
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Will-change for actively animating elements */
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  .will-change-transform-opacity {
+    will-change: transform, opacity;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }

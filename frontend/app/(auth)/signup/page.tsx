@@ -1,11 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { signUp } from "@/lib/auth-client"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { UserPlus, Mail, Lock, User } from "lucide-react"
+import Link from "next/link"
 
 export default function SignupPage() {
-  const router = useRouter()
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -30,10 +34,9 @@ export default function SignupPage() {
         setError(result.error.message || "Failed to create account")
         setLoading(false)
       } else {
-        // Signup successful, use window.location to ensure session cookie is picked up
         window.location.href = "/todo"
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred")
       setLoading(false)
     }
@@ -41,34 +44,37 @@ export default function SignupPage() {
 
   const handleGoogleSignup = async () => {
     try {
-      // Better Auth Google OAuth integration
       window.location.href = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3004"}/api/auth/signin/google`
-    } catch (err) {
+    } catch {
       setError("Failed to initiate Google signup")
     }
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Sign Up</h1>
-          <p className="mt-2 text-gray-600">Create your account</p>
-        </div>
-
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <p className="text-sm text-red-800">{error}</p>
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center space-y-2">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <UserPlus className="h-6 w-6 text-primary" />
           </div>
-        )}
+          <CardTitle className="text-2xl">Join Us</CardTitle>
+          <CardDescription>Create your account</CardDescription>
+        </CardHeader>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium">
+        <CardContent className="space-y-4">
+          {error && (
+            <div className="rounded-md bg-destructive/10 p-3 border border-destructive/20">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="name" className="flex items-center gap-1">
+                <User className="h-4 w-4" />
                 Name
-              </label>
-              <input
+              </Label>
+              <Input
                 id="name"
                 type="text"
                 required
@@ -76,16 +82,16 @@ export default function SignupPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="John Doe"
               />
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center gap-1">
+                <Mail className="h-4 w-4" />
                 Email
-              </label>
-              <input
+              </Label>
+              <Input
                 id="email"
                 type="email"
                 required
@@ -93,16 +99,16 @@ export default function SignupPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="you@example.com"
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="flex items-center gap-1">
+                <Lock className="h-4 w-4" />
                 Password
-              </label>
-              <input
+              </Label>
+              <Input
                 id="password"
                 type="password"
                 required
@@ -111,48 +117,50 @@ export default function SignupPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="••••••••"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Minimum 8 characters
               </p>
             </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? "Creating Account..." : "Create Account"}
+            </Button>
+          </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleGoogleSignup}
+            className="w-full"
           >
-            {loading ? "Creating Account..." : "Create Account"}
-          </button>
-        </form>
+            Sign up with Google
+          </Button>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300" />
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-2 text-gray-500">Or continue with</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleSignup}
-          className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          Sign up with Google
-        </button>
-
-        <p className="text-center text-sm text-gray-600">
-          Already have an account?{" "}
-          <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-            Sign in
-          </a>
-        </p>
-      </div>
+          <p className="text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/login" className="font-medium text-primary hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
