@@ -159,15 +159,14 @@ interface ScrollRevealProps {
   --glass-blur-heavy: 20px;
 
   /* Glow Effects */
-  --cyan-glow: rgba(125, 211, 252, 0.3);
-  --aqua-glow: rgba(186, 230, 253, 0.2);
-  --white-glow: rgba(224, 242, 254, 0.4);
+  --purple-glow: rgba(153, 41, 234, 0.3);
+  --magenta-glow: rgba(255, 95, 207, 0.2);
+  --gold-glow: rgba(250, 235, 146, 0.4);
 
   /* Color Palette */
-  --sky-cyan: #7dd3fc;
-  --soft-aqua: #bae6fd;
-  --misty-white: #e0f2fe;
-  --misty-green: #d1fae5;
+  --aura-purple: #9929EA;
+  --aura-magenta: #FF5FCF;
+  --aura-gold: #FAEB92;
 
   /* Animation Durations */
   --duration-fast: 0.3s;
@@ -188,10 +187,9 @@ interface ScrollRevealProps {
 theme: {
   extend: {
     colors: {
-      'sky-cyan': '#7dd3fc',
-      'soft-aqua': '#bae6fd',
-      'misty-white': '#e0f2fe',
-      'misty-green': '#d1fae5',
+      'aura-purple': '#9929EA',
+      'aura-magenta': '#FF5FCF',
+      'aura-gold': '#FAEB92',
     },
     backdropBlur: {
       xs: '2px',

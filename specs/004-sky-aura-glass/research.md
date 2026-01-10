@@ -113,11 +113,11 @@ backdrop-filter: blur(30px);  /* Maximum - use sparingly */
   box-shadow:
     /* Inner glow */
     inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
-    /* Mid bloom (cyan) */
-    0 4px 16px rgba(125, 211, 252, 0.3),
-    /* Outer bloom (aqua + white) */
-    0 8px 32px rgba(186, 230, 253, 0.2),
-    0 12px 48px rgba(224, 242, 254, 0.4);
+    /* Mid bloom (purple) */
+    0 4px 16px rgba(153, 41, 234, 0.3),
+    /* Outer bloom (magenta + gold) */
+    0 8px 32px rgba(255, 95, 207, 0.2),
+    0 12px 48px rgba(250, 235, 146, 0.4);
 }
 ```
 
@@ -138,8 +138,8 @@ backdrop-filter: blur(30px);  /* Maximum - use sparingly */
 ```
 
 #### Contrast Ratio Maintenance
-- Text on glass: Use `text-cyan-900` (AAA contrast: 7.5:1)
-- Secondary text: Use `text-cyan-700` (AA contrast: 4.8:1)
+- Text on glass: Use `text-purple-900` (AAA contrast: 7.5:1)
+- Secondary text: Use `text-purple-700` (AA contrast: 4.8:1)
 - Increase background opacity if contrast fails
 - Test with WebAIM Contrast Checker
 

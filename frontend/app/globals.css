@@ -32,15 +32,14 @@
   --glass-blur: 12px;
 
   /* Glow Effects */
-  --cyan-glow: rgba(153, 41, 234, 0.3);
-  --aqua-glow: rgba(255, 95, 207, 0.2);
-  --white-glow: rgba(250, 235, 146, 0.4);
+  --purple-glow: rgba(153, 41, 234, 0.3);
+  --magenta-glow: rgba(255, 95, 207, 0.2);
+  --gold-glow: rgba(250, 235, 146, 0.4);
 
   /* Color Palette */
-  --sky-cyan: #9929EA;
-  --soft-aqua: #FF5FCF;
-  --misty-white: #FAEB92;
-  --misty-green: #FAEB92;
+  --aura-purple: #9929EA;
+  --aura-magenta: #FF5FCF;
+  --aura-gold: #FAEB92;
 
   /* Animation Durations */
   --duration-float: 4s;

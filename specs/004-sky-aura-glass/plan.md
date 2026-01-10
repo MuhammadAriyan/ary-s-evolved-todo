@@ -8,7 +8,7 @@
 Transform the existing Next.js todo application into an anime-inspired, nature-themed glassmorphic experience embodying peace, resilience, and quiet strength through the Sky-Aura Glass aesthetic. This is a frontend-focused visual transformation that adds:
 
 1. **Authentication UX Enhancements**: Logout functionality via iPhone-style notch header, session timeout handling with modal notifications, conditional CTA visibility
-2. **Glassmorphic Visual System**: Translucent glass-like surfaces with backdrop blur, soft bloom shadows, aqua/cyan/white color palette
+2. **Glassmorphic Visual System**: Translucent glass-like surfaces with backdrop blur, soft bloom shadows, purple/magenta/gold color palette
 3. **Nature-Themed Animations**: Entry animations, floating elements, scroll reveals, parallax effects using Framer Motion
 4. **Immersive Components**: Notch header, animated gradient background, cloud animations, hero section with notched borders
 5. **Accessibility & Performance**: Reduced motion support, WCAG 2.1 AA compliance, CPU/GPU benchmarking for adaptive performance
@@ -41,7 +41,7 @@ Transform the existing Next.js todo application into an anime-inspired, nature-t
 - Must respect prefers-reduced-motion user preferences
 - Must maintain WCAG 2.1 AA contrast ratios despite glassmorphic styling
 - Must degrade gracefully on browsers without backdrop-filter support
-- Sky-cyan/aqua/white palette only (no dark mode)
+- Purple/magenta/gold palette only (no dark mode)
 
 **Scale/Scope**:
 - ~12 new React components (layout, animations, UI primitives)
@@ -252,7 +252,7 @@ Todo Page
 Auth Pages
 ├── PageWrapper
 └── Form Container (glassmorphic)
-    ├── Input Fields (glassmorphic, cyan focus)
+    ├── Input Fields (glassmorphic, purple focus)
     └── GlassButton (submit)
 ```
 
@@ -293,15 +293,14 @@ interface EntryAnimationState {
   --glass-blur: 12px;
 
   /* Glow Effects */
-  --cyan-glow: rgba(125, 211, 252, 0.3);
-  --aqua-glow: rgba(186, 230, 253, 0.2);
-  --white-glow: rgba(224, 242, 254, 0.4);
+  --purple-glow: rgba(153, 41, 234, 0.3);
+  --magenta-glow: rgba(255, 95, 207, 0.2);
+  --gold-glow: rgba(250, 235, 146, 0.4);
 
   /* Color Palette */
-  --sky-cyan: #7dd3fc;
-  --soft-aqua: #bae6fd;
-  --misty-white: #e0f2fe;
-  --misty-green: #d1fae5;
+  --aura-purple: #9929EA;
+  --aura-magenta: #FF5FCF;
+  --aura-gold: #FAEB92;
 }
 ```
 
@@ -424,7 +423,7 @@ interface EntryAnimationState {
 - All components display glassmorphic styling
 - Nature icons (Leaf, Mountain, Sprout, Flower, Sun) used appropriately
 - Hover states show breathing glow effects
-- Focus states show cyan glow outline
+- Focus states show purple glow outline
 - Stagger animations work for list items
 
 ### Phase 6: Auth Pages Transformation (Priority: P2)
@@ -439,7 +438,7 @@ interface EntryAnimationState {
 
 **Acceptance Criteria**:
 - Auth forms display glassmorphic styling
-- Input fields show cyan glow on focus
+- Input fields show purple glow on focus
 - Submit buttons use GlassButton component
 - Forms remain fully functional
 
@@ -503,7 +502,7 @@ interface EntryAnimationState {
 ### Design
 
 ✅ iPhone-style notch header with glassmorphic styling
-✅ Animated aqua/cyan gradient background on all pages
+✅ Animated purple/magenta gradient background on all pages
 ✅ Hero section with notched border and interactive clouds
 ✅ Demo section with video autoplay (muted, looped)
 ✅ Todo page entry animation (1.5s, skippable)

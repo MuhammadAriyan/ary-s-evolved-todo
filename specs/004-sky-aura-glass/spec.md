@@ -2,8 +2,11 @@
 
 **Feature Branch**: `004-sky-aura-glass`
 **Created**: 2026-01-07
-**Status**: Draft
+**Updated**: 2026-01-09
+**Status**: Implemented
 **Input**: User description: "Transform the todo app into an anime-inspired, nature-themed glassmorphic experience while fixing authentication persistence issues. The design embodies peace, resilience, nature, and quiet strength through the Sky-Aura Glass aesthetic."
+
+> **Theme Update (2026-01-09)**: Color palette evolved from sky-cyan/aqua to **Purple-Glassy** theme with purple (#9929EA), magenta (#FF5FCF), and gold (#FAEB92) for a more vibrant, creative aesthetic.
 
 ## Clarifications
 
@@ -37,19 +40,19 @@ Users need clear visibility and control over their authentication state. Current
 
 ### User Story 2 - Immersive Visual Experience (Priority: P2)
 
-Users experience a calming, nature-inspired visual environment that embodies peace, resilience, and quiet strength. The interface uses translucent glass-like surfaces with soft aqua and cyan tones reminiscent of clear skies and water.
+Users experience a calming, nature-inspired visual environment that embodies peace, resilience, and quiet strength. The interface uses translucent glass-like surfaces with purple and magenta tones creating a vibrant, creative aesthetic.
 
 **Why this priority**: The visual transformation is the core value proposition of this feature, creating an emotionally engaging experience that differentiates the application.
 
-**Independent Test**: Can be tested by viewing the application and verifying the presence of glassmorphic styling, aqua/cyan color palette, and nature-themed visual elements across all pages. Delivers aesthetic value and brand identity.
+**Independent Test**: Can be tested by viewing the application and verifying the presence of glassmorphic styling, purple/magenta color palette, and nature-themed visual elements across all pages. Delivers aesthetic value and brand identity.
 
 **Acceptance Scenarios**:
 
 1. **Given** a user visits any page, **When** the page loads, **Then** they see a translucent glass-like header with soft blur effects
-2. **Given** a user views the landing page, **When** the page loads, **Then** they see an animated aqua/cyan gradient background with smooth color transitions
+2. **Given** a user views the landing page, **When** the page loads, **Then** they see an animated purple/magenta gradient background with smooth color transitions
 3. **Given** a user views the hero section, **When** the page loads, **Then** they see a thick notched border with animated cloud elements
 4. **Given** a user views any interactive element (buttons, cards, forms), **When** they interact with it, **Then** the element displays glassmorphic styling with translucent backgrounds and soft shadows
-5. **Given** a user views the application, **When** they observe the color scheme, **Then** all colors use the sky-cyan/aqua/white palette with no dark mode elements
+5. **Given** a user views the application, **When** they observe the color scheme, **Then** all colors use the purple/magenta/gold palette with no dark mode elements
 
 ---
 
@@ -144,7 +147,7 @@ Users see nature-inspired icons throughout the interface (leaves, clouds, water 
 - What happens if the demo video fails to load? (Should show a fallback image or message with glassmorphic styling)
 - How do animations perform on low-powered devices? (System performs CPU/GPU benchmarking on first load to detect device capabilities and automatically reduces animation complexity if needed; users can also manually toggle animation settings)
 - What happens when a user has browser animations disabled? (Should respect user preferences and show static versions)
-- How does the aqua/cyan color scheme work for users with color vision deficiencies? (Should maintain sufficient contrast for accessibility)
+- How does the purple/magenta color scheme work for users with color vision deficiencies? (Should maintain sufficient contrast for accessibility)
 - What happens when external profile links (LinkedIn, GitHub) are not configured? (Should hide or disable those icons gracefully)
 
 ## Requirements *(mandatory)*
@@ -156,7 +159,7 @@ Users see nature-inspired icons throughout the interface (leaves, clouds, water 
 - **FR-003**: System MUST hide login/signup call-to-action elements on the landing page when a user is authenticated
 - **FR-004**: System MUST show login/signup call-to-action elements on the landing page when a user is not authenticated
 - **FR-005**: System MUST apply glassmorphic visual styling (translucent backgrounds, blur effects, soft shadows) to all UI components
-- **FR-006**: System MUST use an aqua/cyan/white color palette consistently across all pages
+- **FR-006**: System MUST use a purple/magenta/gold color palette consistently across all pages
 - **FR-007**: System MUST display an animated gradient background with smooth color transitions
 - **FR-008**: System MUST render a notch-style header with centered icons for LinkedIn, GitHub, and Account access
 - **FR-009**: System MUST provide functional links from header icons to external profiles (LinkedIn, GitHub)
@@ -191,7 +194,7 @@ Users see nature-inspired icons throughout the interface (leaves, clouds, water 
 - **SC-002**: 100% of authenticated users see the logout button in the header on all pages
 - **SC-003**: Login/signup CTAs are correctly hidden for authenticated users and shown for unauthenticated users with 100% accuracy
 - **SC-004**: All UI components display glassmorphic styling with translucent backgrounds and blur effects visible on modern browsers
-- **SC-005**: The aqua/cyan/white color palette is applied consistently across 100% of the interface with no dark mode elements
+- **SC-005**: The purple/magenta/gold color palette is applied consistently across 100% of the interface with no dark mode elements
 - **SC-006**: The notch header renders correctly and all three icons (LinkedIn, GitHub, Account) are functional on desktop and mobile devices
 - **SC-007**: The todo entry animation plays smoothly at 60fps on devices with standard performance capabilities
 - **SC-008**: Users can skip the todo entry animation within 1 second of it starting
@@ -213,7 +216,7 @@ Users see nature-inspired icons throughout the interface (leaves, clouds, water 
 
 ## Constraints *(mandatory)*
 
-- Must use only the sky-cyan/aqua/white color palette (no other color schemes)
+- Must use only the purple/magenta/gold color palette (no other color schemes)
 - Must NOT implement dark mode or theme switching
 - Must maintain existing authentication functionality (httpOnly cookies)
 - Must ensure glassmorphic effects degrade gracefully on browsers that don't support backdrop-filter

@@ -106,7 +106,7 @@ export interface GlassButtonProps {
  * - backdrop-blur-md (12px)
  * - bg-white/30
  * - border-white/50
- * - shadow-bloom (multi-layer cyan/aqua/white)
+ * - shadow-bloom (multi-layer purple/magenta/gold)
  *
  * Performance:
  * - Animations disabled on low-performance devices
@@ -129,6 +129,6 @@ export function GlassCard(props: GlassCardProps): JSX.Element;
  * Interactions:
  * - Hover: scale 1.05, brightness increase
  * - Active: scale 0.98
- * - Focus: cyan glow outline
+ * - Focus: purple glow outline
  */
 export function GlassButton(props: GlassButtonProps): JSX.Element;

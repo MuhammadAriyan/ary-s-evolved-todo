@@ -49,7 +49,7 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
         // Sky-Aura Glass Color Palette
-        "sky-cyan": {
+        "aura-purple": {
           DEFAULT: "#9929EA",
           50: "#faf5ff",
           100: "#f3e8ff",
@@ -62,7 +62,7 @@ const config: Config = {
           800: "#5b21b6",
           900: "#4c1d95",
         },
-        "soft-aqua": {
+        "aura-magenta": {
           DEFAULT: "#FF5FCF",
           50: "#fdf2f8",
           100: "#fce7f3",
@@ -70,18 +70,10 @@ const config: Config = {
           300: "#f9a8d4",
           400: "#FF5FCF",
         },
-        "misty-white": {
+        "aura-gold": {
           DEFAULT: "#FAEB92",
           50: "#fefce8",
           100: "#FAEB92",
-        },
-        "misty-green": {
-          DEFAULT: "#FAEB92",
-          50: "#fefce8",
-          100: "#fef9c3",
-          200: "#fef08a",
-          300: "#FAEB92",
-          400: "#facc15",
         },
       },
       borderRadius: {

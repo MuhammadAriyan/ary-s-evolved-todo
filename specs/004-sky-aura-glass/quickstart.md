@@ -64,10 +64,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'sky-cyan': '#7dd3fc',
-        'soft-aqua': '#bae6fd',
-        'misty-white': '#e0f2fe',
-        'misty-green': '#d1fae5',
+        'aura-purple': '#9929EA',
+        'aura-magenta': '#FF5FCF',
+        'aura-gold': '#FAEB92',
       },
       backdropBlur: {
         xs: '2px',
@@ -129,15 +128,14 @@ Add to `app/globals.css`:
     --glass-blur-heavy: 20px;
 
     /* Glow Effects */
-    --cyan-glow: rgba(125, 211, 252, 0.3);
-    --aqua-glow: rgba(186, 230, 253, 0.2);
-    --white-glow: rgba(224, 242, 254, 0.4);
+    --purple-glow: rgba(153, 41, 234, 0.3);
+    --magenta-glow: rgba(255, 95, 207, 0.2);
+    --gold-glow: rgba(250, 235, 146, 0.4);
 
     /* Color Palette */
-    --sky-cyan: #7dd3fc;
-    --soft-aqua: #bae6fd;
-    --misty-white: #e0f2fe;
-    --misty-green: #d1fae5;
+    --aura-purple: #9929EA;
+    --aura-magenta: #FF5FCF;
+    --aura-gold: #FAEB92;
 
     /* Animation Durations */
     --duration-fast: 0.3s;
@@ -159,15 +157,15 @@ Add to `app/globals.css`:
   .glass-button {
     @apply backdrop-blur-glass bg-white/25 border border-white/40 rounded-2xl shadow-glass-md;
     @apply hover:scale-105 hover:brightness-110 active:scale-98;
-    @apply focus:outline-none focus:ring-2 focus:ring-sky-cyan/50;
+    @apply focus:outline-none focus:ring-2 focus:ring-aura-purple/50;
   }
 
   .text-glass {
-    @apply text-cyan-900;
+    @apply text-purple-900;
   }
 
   .text-glass-secondary {
-    @apply text-cyan-700;
+    @apply text-purple-700;
   }
 }
 ```
@@ -425,7 +423,7 @@ events.forEach(event => window.addEventListener(event, updateActivity));
 
 ```css
 .text-glass {
-  @apply text-cyan-900; /* AAA contrast: 7.5:1 */
+  @apply text-purple-900; /* AAA contrast: 7.5:1 */
 }
 ```
 

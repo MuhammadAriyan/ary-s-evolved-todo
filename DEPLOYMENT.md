@@ -47,7 +47,81 @@ alembic upgrade head
 
 ## Backend Deployment
 
-### Option 1: Railway
+### Option 1: Hugging Face Spaces (Recommended - Free)
+
+**Best for**: Hobby projects, demos, free hosting with no billing required.
+
+1. **Create New Space**
+   - Go to [huggingface.co/spaces](https://huggingface.co/spaces)
+   - Click "Create new Space"
+   - Configure:
+     - **Space name**: `ary-todo-backend`
+     - **SDK**: `Docker`
+     - **Hardware**: `CPU basic` (free)
+     - **Visibility**: Public
+
+2. **Add Secrets**
+   Go to Settings → Repository secrets:
+   ```
+   DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require
+   CORS_ORIGINS=https://your-app.vercel.app
+   BETTER_AUTH_URL=https://your-app.vercel.app
+   APP_ENV=production
+   JWT_SECRET_KEY=your-production-jwt-secret
+   ```
+
+3. **Push Backend Code**
+   ```bash
+   cd backend
+   git init
+   git remote add hf https://huggingface.co/spaces/YOUR_USERNAME/ary-todo-backend
+   git add .
+   git commit -m "Deploy backend"
+   git push hf main
+   ```
+
+4. **Verify Deployment**
+   ```bash
+   # Health check (wait 2-5 min for build)
+   curl https://YOUR_USERNAME-ary-todo-backend.hf.space/health
+
+   # API docs
+   open https://YOUR_USERNAME-ary-todo-backend.hf.space/docs
+   ```
+
+**Note**: Free tier sleeps after ~15 min inactivity. First request after sleep takes 30-60 seconds.
+
+### Option 2: Google Cloud Run (Pay-per-use)
+
+**Best for**: Production apps needing auto-scaling and custom domains.
+
+1. **Setup gcloud CLI**
+   ```bash
+   gcloud auth login
+   gcloud config set project YOUR_PROJECT_ID
+   ```
+
+2. **Build and Deploy**
+   ```bash
+   cd backend
+
+   # Build and push image
+   gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/todo-backend
+
+   # Deploy to Cloud Run
+   gcloud run deploy todo-backend \
+     --image gcr.io/YOUR_PROJECT_ID/todo-backend \
+     --platform managed \
+     --region us-central1 \
+     --allow-unauthenticated \
+     --set-env-vars "DATABASE_URL=postgresql://...,CORS_ORIGINS=https://your-app.vercel.app,BETTER_AUTH_URL=https://your-app.vercel.app,APP_ENV=production" \
+     --port 8000 \
+     --memory 512Mi
+   ```
+
+**Cost**: Free tier includes 2M requests/month, then ~$0.40/million requests.
+
+### Option 3: Railway
 
 1. **Create New Project**
    - Go to [Railway](https://railway.app/)

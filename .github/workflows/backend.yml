@@ -106,28 +106,39 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build
+    needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: Deploy to Railway
-        run: |
-          echo "Deploying to Railway..."
-          # Railway automatically deploys on push to main
-          # This step is a placeholder for custom deployment logic
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Run database migrations
+      - name: Deploy to Hugging Face Spaces
         env:
-          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          pip install alembic sqlmodel
-          cd backend
-          alembic upgrade head
+          pip install huggingface_hub
 
-      - name: Notify deployment
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          text: 'Backend deployment completed'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        if: always()
+          # Push backend folder to HF Space
+          huggingface-cli upload ${{ vars.HF_SPACE_ID }} ./backend . --repo-type space --token $HF_TOKEN
+
+          echo "Deployed to https://huggingface.co/spaces/${{ vars.HF_SPACE_ID }}"
+
+      - name: Wait for Space to rebuild
+        run: |
+          echo "Waiting for HF Space to rebuild (this may take 2-5 minutes)..."
+          sleep 60
+
+      - name: Verify deployment
+        run: |
+          # Health check (with retries for cold start)
+          for i in {1..5}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" "https://${{ vars.HF_SPACE_ID }}.hf.space/health" || echo "000")
+            if [ "$response" = "200" ]; then
+              echo "✅ Backend is healthy!"
+              exit 0
+            fi
+            echo "Attempt $i: Got $response, retrying in 30s..."
+            sleep 30
+          done
+          echo "⚠️ Health check timed out (Space may still be building)"
