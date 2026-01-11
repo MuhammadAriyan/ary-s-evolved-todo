@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { signUp } from "@/lib/auth-client"
+import { signUp, signIn } from "@/lib/auth-client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,7 +44,7 @@ export default function SignupPage() {
 
   const handleGoogleSignup = async () => {
     try {
-      window.location.href = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3004"}/api/auth/signin/google`
+      await signIn.social({ provider: "google", callbackURL: "/todo" })
     } catch {
       setError("Failed to initiate Google signup")
     }

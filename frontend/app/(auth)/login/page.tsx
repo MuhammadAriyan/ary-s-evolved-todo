@@ -42,7 +42,7 @@ export default function LoginPage() {
 
   const handleGoogleSignin = async () => {
     try {
-      window.location.href = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3004"}/api/auth/signin/google`
+      await signIn.social({ provider: "google", callbackURL: "/todo" })
     } catch {
       setError("Failed to initiate Google sign in")
     }
