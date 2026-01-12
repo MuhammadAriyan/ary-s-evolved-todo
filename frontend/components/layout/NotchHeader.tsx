@@ -1,6 +1,7 @@
 'use client';
 
-import { Linkedin, Github } from 'lucide-react';
+import { Linkedin, Github, MessageSquare } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { UserDropdown } from './UserDropdown';
 
@@ -27,6 +28,14 @@ export function NotchHeader({
           </span>
 
           <div className="flex items-center gap-1">
+            {isAuthenticated && (
+              <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
+                <Link href="/chat" aria-label="AI Chat">
+                  <MessageSquare className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
+
             {linkedinUrl && (
               <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
                 <a

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.api.v1.router import router as api_v1_router
 from app.services.scheduler import start_scheduler, shutdown_scheduler
+from app.services.ai.config import initialize_ai_client, is_ai_configured
 import logging
 import time
 
@@ -19,6 +20,17 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up application...")
     start_scheduler()
+
+    # Initialize AI client if configured
+    if is_ai_configured():
+        try:
+            initialize_ai_client()
+            logger.info("AI client initialized successfully")
+        except Exception as e:
+            logger.warning(f"AI client initialization failed: {e}")
+    else:
+        logger.info("AI client not configured (AI_API_KEY not set)")
+
     yield
     # Shutdown
     logger.info("Shutting down application...")

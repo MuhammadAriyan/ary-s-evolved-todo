@@ -11,3 +11,6 @@ pydantic-settings>=2.0.0
 cryptography>=41.0.0
 httpx>=0.25.0
 requests>=2.31.0
+# AI Chatbot dependencies
+openai-agents>=0.0.3
+mcp>=1.0.0

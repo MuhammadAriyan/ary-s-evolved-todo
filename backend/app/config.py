@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     # CORS - single URL or comma-separated URLs as string
     cors_origins: str = "http://localhost:3000"
 
+    # AI Chatbot Configuration
+    ai_api_key: str = ""
+    ai_base_url: str = "https://api.openai.com/v1"
+    ai_model: str = "gpt-4o-mini"
+
     def get_cors_origins_list(self) -> list[str]:
         """Parse cors_origins string into a list."""
         if not self.cors_origins:
