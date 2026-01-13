@@ -1,7 +1,12 @@
 """MCP Server for task operations using Official MCP SDK.
 
 This module creates an MCP server that exposes task operations as tools.
-The server is integrated with FastAPI and used by OpenAI Agents.
+The server is used by OpenAI Agents via mcp_servers parameter.
+
+Architecture:
+- MCP server runs as subprocess or in-process
+- Agents connect via MCPServerStdio or MCPServerSse
+- Tools are decorated with @mcp.tool() only
 """
 from datetime import datetime, date
 from typing import Optional

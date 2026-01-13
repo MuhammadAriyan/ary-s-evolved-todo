@@ -1,27 +1,20 @@
 """Task agents for AI Todo Chatbot.
 
 Each agent has a distinct personality and handles specific task operations.
-Agents use MCP tools for database operations.
+Agents use MCP server tools via mcp_servers parameter.
 """
 from agents import Agent
 
-from app.services.ai.mcp_server import (
-    add_task,
-    list_tasks,
-    complete_task,
-    uncomplete_task,
-    delete_task,
-    update_task,
-    search_tasks,
-    get_task_analytics,
-)
 from app.services.ai.config import get_ai_model
 
 
-def create_add_task_agent() -> Agent:
+def create_add_task_agent(mcp_server=None) -> Agent:
     """Create the AddTaskAgent (Elara ➕).
 
     Handles task creation with a helpful, encouraging personality.
+
+    Args:
+        mcp_server: Optional MCP server instance for task tools
     """
     return Agent(
         name="Elara",
@@ -48,15 +41,23 @@ When creating tasks:
 Always confirm the task was created with its details.
 If the input is ambiguous (e.g., just "groceries"), ask: "Would you like me to create a task called 'groceries'?"
 
+IMPORTANT - Language matching:
+- If the user's message is in Urdu (اردو) or uses Arabic/Nastaliq script, respond in Urdu using proper Urdu script
+- If the user's message is in English, respond in English
+- Always match the user's language in your response
+
 Your icon is ➕ - include it in your responses.""",
-        tools=[add_task],
+        mcp_servers=[mcp_server] if mcp_server else [],
     )
 
 
-def create_list_tasks_agent() -> Agent:
+def create_list_tasks_agent(mcp_server=None) -> Agent:
     """Create the ListTasksAgent (Kael 📋).
 
     Handles task listing and filtering with an organized personality.
+
+    Args:
+        mcp_server: Optional MCP server instance for task tools
     """
     return Agent(
         name="Kael",
@@ -85,15 +86,23 @@ Format tasks clearly:
 - Show priority and due date when relevant
 - Indicate completion status
 
+IMPORTANT - Language matching:
+- If the user's message is in Urdu (اردو) or uses Arabic/Nastaliq script, respond in Urdu using proper Urdu script
+- If the user's message is in English, respond in English
+- Always match the user's language in your response
+
 Your icon is 📋 - include it in your responses.""",
-        tools=[list_tasks],
+        mcp_servers=[mcp_server] if mcp_server else [],
     )
 
 
-def create_complete_task_agent() -> Agent:
+def create_complete_task_agent(mcp_server=None) -> Agent:
     """Create the CompleteTaskAgent (Nyra ✅).
 
     Handles task completion and reopening with a celebratory personality.
+
+    Args:
+        mcp_server: Optional MCP server instance for task tools
     """
     return Agent(
         name="Nyra",
@@ -123,15 +132,23 @@ When reopening tasks:
 
 If the task is not found, help the user identify the correct task.
 
+IMPORTANT - Language matching:
+- If the user's message is in Urdu (اردو) or uses Arabic/Nastaliq script, respond in Urdu using proper Urdu script
+- If the user's message is in English, respond in English
+- Always match the user's language in your response
+
 Your icon is ✅ - include it in your responses.""",
-        tools=[complete_task, uncomplete_task],
+        mcp_servers=[mcp_server] if mcp_server else [],
     )
 
 
-def create_delete_task_agent() -> Agent:
+def create_delete_task_agent(mcp_server=None) -> Agent:
     """Create the DeleteTaskAgent (Taro 🗑️).
 
     Handles task deletion with a careful, confirming personality.
+
+    Args:
+        mcp_server: Optional MCP server instance for task tools
     """
     return Agent(
         name="Taro",
@@ -158,15 +175,23 @@ Important:
 - If the task is not found, help identify the correct one
 - Be clear about what was deleted
 
+IMPORTANT - Language matching:
+- If the user's message is in Urdu (اردو) or uses Arabic/Nastaliq script, respond in Urdu using proper Urdu script
+- If the user's message is in English, respond in English
+- Always match the user's language in your response
+
 Your icon is 🗑️ - include it in your responses.""",
-        tools=[delete_task],
+        mcp_servers=[mcp_server] if mcp_server else [],
     )
 
 
-def create_update_task_agent() -> Agent:
+def create_update_task_agent(mcp_server=None) -> Agent:
     """Create the UpdateTaskAgent (Lys ✏️).
 
     Handles task updates with a detail-oriented personality.
+
+    Args:
+        mcp_server: Optional MCP server instance for task tools
     """
     return Agent(
         name="Lys",
@@ -196,15 +221,23 @@ Supported updates:
 - Tags: "add tag shopping", "change tags to [work, urgent]"
 - Description: "update description to..."
 
+IMPORTANT - Language matching:
+- If the user's message is in Urdu (اردو) or uses Arabic/Nastaliq script, respond in Urdu using proper Urdu script
+- If the user's message is in English, respond in English
+- Always match the user's language in your response
+
 Your icon is ✏️ - include it in your responses.""",
-        tools=[update_task],
+        mcp_servers=[mcp_server] if mcp_server else [],
     )
 
 
-def create_search_agent() -> Agent:
+def create_search_agent(mcp_server=None) -> Agent:
     """Create the SearchAgent (Vera 🔍).
 
     Handles task search with an investigative personality.
+
+    Args:
+        mcp_server: Optional MCP server instance for task tools
     """
     return Agent(
         name="Vera",
@@ -232,15 +265,23 @@ Present search results:
 - Highlight why each task matched
 - Offer to refine the search if needed
 
+IMPORTANT - Language matching:
+- If the user's message is in Urdu (اردو) or uses Arabic/Nastaliq script, respond in Urdu using proper Urdu script
+- If the user's message is in English, respond in English
+- Always match the user's language in your response
+
 Your icon is 🔍 - include it in your responses.""",
-        tools=[search_tasks],
+        mcp_servers=[mcp_server] if mcp_server else [],
     )
 
 
-def create_analytics_agent() -> Agent:
+def create_analytics_agent(mcp_server=None) -> Agent:
     """Create the AnalyticsAgent (Orion 📊).
 
     Handles task analytics with an insightful personality.
+
+    Args:
+        mcp_server: Optional MCP server instance for task tools
     """
     return Agent(
         name="Orion",
@@ -273,8 +314,13 @@ When presenting analytics:
 
 If the user has no tasks, encourage them to get started!
 
+IMPORTANT - Language matching:
+- If the user's message is in Urdu (اردو) or uses Arabic/Nastaliq script, respond in Urdu using proper Urdu script
+- If the user's message is in English, respond in English
+- Always match the user's language in your response
+
 Your icon is 📊 - include it in your responses.""",
-        tools=[get_task_analytics],
+        mcp_servers=[mcp_server] if mcp_server else [],
     )
 
 

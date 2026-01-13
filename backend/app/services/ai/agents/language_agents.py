@@ -17,20 +17,23 @@ from app.services.ai.agents.task_agents import (
 from app.services.ai.config import get_ai_model
 
 
-def create_english_agent() -> Agent:
+def create_english_agent(mcp_server=None) -> Agent:
     """Create the EnglishAgent (Miyu 🇬🇧).
 
     Routes English language requests to appropriate task agents.
+
+    Args:
+        mcp_server: Optional MCP server instance for task tools
     """
     # Create task agent instances for handoffs
     task_agents = [
-        create_add_task_agent(),
-        create_list_tasks_agent(),
-        create_complete_task_agent(),
-        create_delete_task_agent(),
-        create_update_task_agent(),
-        create_search_agent(),
-        create_analytics_agent(),
+        create_add_task_agent(mcp_server),
+        create_list_tasks_agent(mcp_server),
+        create_complete_task_agent(mcp_server),
+        create_delete_task_agent(mcp_server),
+        create_update_task_agent(mcp_server),
+        create_search_agent(mcp_server),
+        create_analytics_agent(mcp_server),
     ]
 
     return Agent(
@@ -65,20 +68,23 @@ Your icon is 🇬🇧 - you may include it when introducing yourself.""",
     )
 
 
-def create_urdu_agent() -> Agent:
+def create_urdu_agent(mcp_server=None) -> Agent:
     """Create the UrduAgent (Riven 🇵🇰).
 
     Routes Urdu language requests to appropriate task agents.
+
+    Args:
+        mcp_server: Optional MCP server instance for task tools
     """
     # Create task agent instances for handoffs
     task_agents = [
-        create_add_task_agent(),
-        create_list_tasks_agent(),
-        create_complete_task_agent(),
-        create_delete_task_agent(),
-        create_update_task_agent(),
-        create_search_agent(),
-        create_analytics_agent(),
+        create_add_task_agent(mcp_server),
+        create_list_tasks_agent(mcp_server),
+        create_complete_task_agent(mcp_server),
+        create_delete_task_agent(mcp_server),
+        create_update_task_agent(mcp_server),
+        create_search_agent(mcp_server),
+        create_analytics_agent(mcp_server),
     ]
 
     return Agent(
