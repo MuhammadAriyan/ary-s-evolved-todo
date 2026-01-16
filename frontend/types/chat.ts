@@ -74,11 +74,96 @@ export const AGENTS: Record<string, AgentInfo> = {
   'Aren': { name: 'Aren', icon: '🤖', description: 'Main Orchestrator' },
   'Miyu': { name: 'Miyu', icon: '🇬🇧', description: 'English Agent' },
   'Riven': { name: 'Riven', icon: '🇵🇰', description: 'Urdu Agent' },
-  'Elara': { name: 'Elara', icon: '➕', description: 'Task Creator' },
-  'Kael': { name: 'Kael', icon: '📋', description: 'Task Lister' },
-  'Nyra': { name: 'Nyra', icon: '✅', description: 'Task Completer' },
-  'Taro': { name: 'Taro', icon: '🗑️', description: 'Task Deleter' },
-  'Lys': { name: 'Lys', icon: '✏️', description: 'Task Updater' },
-  'Orion': { name: 'Orion', icon: '📊', description: 'Analytics' },
-  'Vera': { name: 'Vera', icon: '🔍', description: 'Search' },
 };
+
+// ============================================================================
+// Streaming Types (SSE)
+// ============================================================================
+
+/** Language hint for faster agent routing */
+export type LanguageHint = 'en' | 'ur' | 'auto';
+
+/** Request for streaming chat endpoint */
+export interface ChatStreamRequest {
+  message: string;
+  conversation_id?: string | null;
+  language_hint?: LanguageHint;
+  context_window?: number;
+}
+
+/** Token chunk from AI response */
+export interface TokenEvent {
+  type: 'token';
+  content: string;
+}
+
+/** Agent handoff notification */
+export interface AgentChangeEvent {
+  type: 'agent_change';
+  agent: string;
+  icon: string;
+}
+
+/** Tool call notification */
+export interface ToolCallEvent {
+  type: 'tool_call';
+  tool: string;
+  args?: Record<string, unknown> | null;
+}
+
+/** New conversation created notification */
+export interface ConversationCreatedEvent {
+  type: 'conversation_created';
+  conversation_id: string;
+}
+
+/** Stream completion notification */
+export interface DoneEvent {
+  type: 'done';
+  message_id: string;
+}
+
+/** Error notification */
+export interface ErrorEvent {
+  type: 'error';
+  message: string;
+}
+
+/** Union type for all stream events */
+export type StreamEvent =
+  | TokenEvent
+  | AgentChangeEvent
+  | ToolCallEvent
+  | ConversationCreatedEvent
+  | DoneEvent
+  | ErrorEvent;
+
+/** Type guard for TokenEvent */
+export function isTokenEvent(event: StreamEvent): event is TokenEvent {
+  return event.type === 'token';
+}
+
+/** Type guard for AgentChangeEvent */
+export function isAgentChangeEvent(event: StreamEvent): event is AgentChangeEvent {
+  return event.type === 'agent_change';
+}
+
+/** Type guard for ToolCallEvent */
+export function isToolCallEvent(event: StreamEvent): event is ToolCallEvent {
+  return event.type === 'tool_call';
+}
+
+/** Type guard for ConversationCreatedEvent */
+export function isConversationCreatedEvent(event: StreamEvent): event is ConversationCreatedEvent {
+  return event.type === 'conversation_created';
+}
+
+/** Type guard for DoneEvent */
+export function isDoneEvent(event: StreamEvent): event is DoneEvent {
+  return event.type === 'done';
+}
+
+/** Type guard for ErrorEvent */
+export function isErrorEvent(event: StreamEvent): event is ErrorEvent {
+  return event.type === 'error';
+}

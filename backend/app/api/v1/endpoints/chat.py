@@ -1,5 +1,7 @@
 """Chat API endpoints for AI Todo Chatbot."""
+import json
 from fastapi import APIRouter, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from typing import Optional
 
 from app.api.deps import SessionDep, CurrentUser
@@ -14,9 +16,10 @@ from app.schemas.chat import (
     UnifiedChatRequest,
     UnifiedChatResponse,
     ToolCallInfo,
+    ChatStreamRequest,
 )
 from app.services.conversation_service import ConversationService
-from app.services.ai.agents.orchestrator import process_message, get_agent_icon
+from app.services.ai.agents.orchestrator import process_message, process_message_streamed, get_agent_icon
 from app.middleware.rate_limit import check_rate_limit
 
 router = APIRouter()
@@ -348,3 +351,139 @@ async def generate_title(
         )
 
     return TitleGenerationResponse(title=title)
+
+
+@router.post("/stream")
+async def stream_chat(
+    request: ChatStreamRequest,
+    session: SessionDep,
+    current_user: CurrentUser,
+):
+    """Stream AI response using Server-Sent Events (SSE).
+
+    Creates a new conversation if conversation_id is not provided.
+    Returns streaming response with real-time token delivery.
+
+    SSE Event Types:
+    - conversation_created: New conversation ID (if created)
+    - agent_change: Agent handoff notification with name and icon
+    - token: Text chunk from AI response
+    - tool_call: MCP tool invocation notification
+    - done: Stream completion with message_id
+    - error: Error notification
+
+    Rate limited to 5 messages per minute per user.
+    """
+    # Check rate limit
+    await check_rate_limit(current_user)
+
+    service = ConversationService(session)
+    conversation_created = False
+
+    # Auto-create conversation if not provided
+    if request.conversation_id:
+        conversation = service.get_conversation(request.conversation_id, current_user)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found"
+            )
+    else:
+        try:
+            conversation = service.create_conversation(current_user)
+            conversation_created = True
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
+
+    # Save user message
+    user_message = service.add_message(
+        conversation_id=conversation.id,
+        user_id=current_user,
+        role="user",
+        content=request.message,
+    )
+
+    if not user_message:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save message"
+        )
+
+    # Get optimized conversation context
+    conversation_history = service.get_optimized_context(
+        conversation_id=conversation.id,
+        user_id=current_user,
+        context_window=request.context_window,
+    )
+    # Remove the message we just added from context
+    if conversation_history and conversation_history[-1].get("content") == request.message:
+        conversation_history = conversation_history[:-1]
+
+    async def generate_sse():
+        """Generate SSE events from streaming response."""
+        accumulated_content = ""
+        final_agent_name = "Aren"
+        final_agent_icon = "🤖"
+
+        # Emit conversation_created event if new conversation
+        if conversation_created:
+            yield f"data: {json.dumps({'type': 'conversation_created', 'conversation_id': conversation.id})}\n\n"
+
+        try:
+            async for event in process_message_streamed(
+                user_id=current_user,
+                message=request.message,
+                conversation_history=conversation_history,
+                language_hint=request.language_hint.value,
+            ):
+                event_type = event.get("type")
+
+                if event_type == "token":
+                    accumulated_content += event.get("content", "")
+                    yield f"data: {json.dumps(event)}\n\n"
+
+                elif event_type == "agent_change":
+                    final_agent_name = event.get("agent", "Aren")
+                    final_agent_icon = event.get("icon", "🤖")
+                    yield f"data: {json.dumps(event)}\n\n"
+
+                elif event_type == "tool_call":
+                    yield f"data: {json.dumps(event)}\n\n"
+
+                elif event_type == "done":
+                    # Use accumulated content or final content from event
+                    final_content = accumulated_content or event.get("content", "")
+
+                    # Save assistant message to database
+                    assistant_message = service.add_message(
+                        conversation_id=conversation.id,
+                        user_id=current_user,
+                        role="assistant",
+                        content=final_content,
+                        agent_name=final_agent_name,
+                        agent_icon=final_agent_icon,
+                    )
+
+                    message_id = assistant_message.id if assistant_message else ""
+                    yield f"data: {json.dumps({'type': 'done', 'message_id': message_id})}\n\n"
+
+                elif event_type == "error":
+                    yield f"data: {json.dumps(event)}\n\n"
+
+        except Exception as e:
+            import logging
+            logging.error(f"SSE streaming error: {type(e).__name__}: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Streaming error occurred'})}\n\n"
+
+    return StreamingResponse(
+        generate_sse(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )

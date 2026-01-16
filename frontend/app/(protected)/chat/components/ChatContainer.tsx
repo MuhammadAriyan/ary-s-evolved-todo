@@ -22,10 +22,11 @@ export function ChatContainer({ className }: ChatContainerProps) {
     isSending,
     error,
     tokenReady,
+    streaming,
     loadConversations,
     selectConversation,
     createNewConversation,
-    sendChatMessage,
+    sendStreamingMessage,
     deleteCurrentConversation,
     clearError,
   } = useChat()
@@ -61,13 +62,11 @@ export function ChatContainer({ className }: ChatContainerProps) {
   }
 
   const handleSendMessage = async (content: string, language?: VoiceLanguage) => {
-    // Create conversation if none selected
-    if (!currentConversation) {
-      const conversation = await createNewConversation()
-      if (!conversation) return
-    }
+    // Map voice language to language hint
+    const languageHint = language === 'ur-PK' ? 'ur' as const : language === 'en-US' ? 'en' as const : 'auto' as const
 
-    await sendChatMessage(content, language)
+    // Use streaming - it handles conversation creation automatically
+    await sendStreamingMessage(content, { languageHint })
   }
 
   return (
@@ -130,13 +129,14 @@ export function ChatContainer({ className }: ChatContainerProps) {
         <MessageThread
           messages={messages}
           isLoading={isSending}
+          streaming={streaming}
           className="flex-1"
         />
 
         {/* Input */}
         <ChatInput
           onSend={handleSendMessage}
-          disabled={isSending}
+          disabled={isSending || streaming.isStreaming}
           placeholder={
             currentConversation
               ? 'Type a message or use voice input...'

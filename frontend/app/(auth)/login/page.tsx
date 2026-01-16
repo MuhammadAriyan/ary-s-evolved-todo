@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { LogIn, Mail, Lock } from "lucide-react"
+import { LogIn, Mail, Lock, Chrome } from "lucide-react"
 import Link from "next/link"
 
 export default function LoginPage() {
@@ -55,7 +55,7 @@ export default function LoginPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <LogIn className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
+          <CardTitle className="text-2xl font-chelsea">Welcome Back</CardTitle>
           <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
 
@@ -127,6 +127,7 @@ export default function LoginPage() {
             onClick={handleGoogleSignin}
             className="w-full"
           >
+            <Chrome className="mr-2 h-4 w-4" />
             Sign in with Google
           </Button>
 

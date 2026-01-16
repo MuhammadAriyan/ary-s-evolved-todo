@@ -229,7 +229,27 @@ amendment before proceeding.
 2. **Planning** (`sp.plan`): Design architecture, data models, contracts
 3. **Tasks** (`sp.tasks`): Generate implementation tasks from approved plans
 4. **Implementation** (`sp.implement`): Execute tasks in dependency order
-5. **Validation**: Verify against acceptance criteria
+5. **Testing** (`testing-engineer` agent): Run automated tests to validate implementation
+6. **Debugging** (`debugger` agent): Diagnose and fix any issues found during testing
+7. **Validation**: Verify against acceptance criteria
+
+### Post-Implementation Testing (Mandatory)
+
+After every `sp.implement` execution, the following agents MUST be invoked:
+
+1. **Testing Engineer Agent** (`testing-engineer`):
+   - Review existing tests and identify coverage gaps
+   - Create comprehensive tests for new functionality
+   - Run all tests and report results
+   - Target: 80%+ coverage on new code
+
+2. **Debugger Agent** (`debugger`):
+   - Diagnose any test failures or runtime errors
+   - Trace conversation flow and agent behavior
+   - Fix identified issues
+   - Verify fixes with re-testing
+
+**Enforcement**: Implementation is NOT considered complete until both agents have run successfully and all tests pass.
 
 ### Quality Gates
 
@@ -297,4 +317,7 @@ When constitution is amended, the following must be updated:
 - Any runtime guidance (README.md, quickstart.md)
 - CLAUDE.md files at all levels
 
-**Version**: 1.0.0 | **Ratified**: 2025-12-30 | **Last Amended**: 2025-12-30
+**Version**: 1.1.0 | **Ratified**: 2025-12-30 | **Last Amended**: 2026-01-15
+
+### Amendment History
+- **1.1.0** (2026-01-15): Added mandatory post-implementation testing requirement with `testing-engineer` and `debugger` agents

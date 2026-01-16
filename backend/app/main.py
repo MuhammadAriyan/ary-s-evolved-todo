@@ -71,12 +71,16 @@ async def log_requests(request: Request, call_next):
     return response
 
 # CORS configuration
+# Allow Vercel domains and local development
+# In production, set CORS_ORIGINS env var to include your Vercel domain
+# Example: CORS_ORIGINS="https://your-app.vercel.app,http://localhost:3000"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.get_cors_origins_list(),
-    allow_credentials=True,
+    allow_credentials=True,  # Required for cookies and auth headers
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],  # Allow frontend to read response headers
 )
 
 # Include API routers
@@ -84,8 +88,70 @@ app.include_router(api_v1_router)
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "service": "todo-api", "version": "1.0.0"}
+    """
+    Basic liveness check endpoint.
+    Returns immediately without checking dependencies.
+    Target response time: <10ms
+    """
+    return {"status": "healthy"}
+
+@app.get("/health/ready")
+async def readiness_check():
+    """
+    Readiness check endpoint.
+    Verifies database connection and OpenAI API availability.
+    Returns detailed status for each dependency.
+    """
+    from app.database import engine
+    from app.services.ai.config import is_ai_configured, get_ai_client
+    from sqlalchemy import text
+
+    status = {
+        "status": "ready",
+        "checks": {
+            "database": {"status": "unknown"},
+            "openai_api": {"status": "unknown"}
+        }
+    }
+
+    # Check database connection
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        status["checks"]["database"] = {"status": "healthy"}
+    except Exception as e:
+        status["checks"]["database"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+        status["status"] = "not_ready"
+
+    # Check OpenAI API availability
+    if is_ai_configured():
+        try:
+            client = get_ai_client()
+            # Simple check - just verify client is initialized
+            if client:
+                status["checks"]["openai_api"] = {"status": "healthy"}
+            else:
+                status["checks"]["openai_api"] = {
+                    "status": "unhealthy",
+                    "error": "Client not initialized"
+                }
+                status["status"] = "not_ready"
+        except Exception as e:
+            status["checks"]["openai_api"] = {
+                "status": "unhealthy",
+                "error": str(e)
+            }
+            status["status"] = "not_ready"
+    else:
+        status["checks"]["openai_api"] = {
+            "status": "not_configured",
+            "message": "AI_API_KEY not set"
+        }
+
+    return status
 
 @app.get("/")
 async def root():

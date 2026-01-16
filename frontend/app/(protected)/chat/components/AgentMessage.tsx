@@ -2,6 +2,8 @@
 
 import { cn } from '@/lib/utils'
 import type { Message } from '@/types/chat'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface AgentMessageProps {
   message: Message
@@ -11,6 +13,27 @@ interface AgentMessageProps {
 export function AgentMessage({ message, className }: AgentMessageProps) {
   const isUser = message.role === 'user'
   const isSystem = message.role === 'system'
+
+  // Determine avatar colors based on agent
+  const getAgentAvatarColor = () => {
+    if (isUser) {
+      // User: purple/magenta gradient
+      return 'bg-gradient-to-br from-aura-purple to-aura-magenta'
+    }
+
+    const agentName = message.agent_name?.toLowerCase() || ''
+
+    if (agentName.includes('miyu')) {
+      // Miyu: purple/violet gradient
+      return 'bg-gradient-to-br from-aura-purple to-purple-600'
+    } else if (agentName.includes('riven')) {
+      // Riven: magenta/pink gradient
+      return 'bg-gradient-to-br from-aura-magenta to-pink-400'
+    }
+
+    // Default: white/10 for other agents
+    return 'bg-white/10'
+  }
 
   return (
     <div
@@ -25,7 +48,10 @@ export function AgentMessage({ message, className }: AgentMessageProps) {
     >
       {/* Agent icon */}
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-lg">
+        <div className={cn(
+          'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg',
+          getAgentAvatarColor()
+        )}>
           {message.agent_icon || '🤖'}
         </div>
       )}
@@ -34,14 +60,16 @@ export function AgentMessage({ message, className }: AgentMessageProps) {
       <div className="flex-1 min-w-0">
         {/* Agent name */}
         {!isUser && message.agent_name && (
-          <div className="text-xs text-white/50 mb-1 font-medium">
+          <div className="text-xs text-white/50 mb-1 font-medium font-chelsea">
             {message.agent_name}
           </div>
         )}
 
         {/* Content */}
-        <div className="text-white/90 whitespace-pre-wrap break-words">
-          {message.content}
+        <div className="text-white/90 prose prose-invert prose-sm max-w-none font-chelsea">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {message.content}
+          </ReactMarkdown>
         </div>
 
         {/* Timestamp */}
@@ -55,9 +83,10 @@ export function AgentMessage({ message, className }: AgentMessageProps) {
 
       {/* User icon */}
       {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-aura-purple/30 flex items-center justify-center text-lg">
-          👤
-        </div>
+        <div className={cn(
+          'flex-shrink-0 w-8 h-8 rounded-full border-2 border-aura-purple/50',
+          getAgentAvatarColor()
+        )} />
       )}
     </div>
   )

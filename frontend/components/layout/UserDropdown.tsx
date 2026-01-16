@@ -62,32 +62,32 @@ export function UserDropdown({ userName, userEmail }: UserDropdownProps) {
 
       <DropdownMenuContent
         align="end"
-        className="glass-card border-white/60 mt-2 min-w-[200px]"
+        className="bg-black/80 backdrop-blur-xl border border-white/10 mt-2 min-w-[200px] rounded-xl shadow-lg"
       >
         {/* User Info */}
         <div className="px-3 py-2">
-          <p className="text-sm font-medium text-glass">{userName || 'User'}</p>
+          <p className="text-sm font-medium text-white">{userName || 'User'}</p>
           {userEmail && (
-            <p className="text-xs text-glass-secondary truncate">{userEmail}</p>
+            <p className="text-xs text-white/60 truncate">{userEmail}</p>
           )}
         </div>
 
-        <DropdownMenuSeparator className="bg-white/40" />
+        <DropdownMenuSeparator className="bg-white/10" />
 
         {/* Settings */}
         <DropdownMenuItem
-          className="cursor-pointer focus:bg-sky-cyan-50/50 text-glass-secondary"
+          className="cursor-pointer focus:bg-white/10 text-white/80 hover:text-white"
           disabled
         >
           <Settings className="mr-2 h-4 w-4" strokeWidth={1.5} />
           <span>Settings</span>
         </DropdownMenuItem>
 
-        <DropdownMenuSeparator className="bg-white/40" />
+        <DropdownMenuSeparator className="bg-white/10" />
 
         {/* Logout */}
         <DropdownMenuItem
-          className="cursor-pointer focus:bg-red-50/50 text-glass-secondary"
+          className="cursor-pointer focus:bg-white/10 text-white/80 hover:text-white"
           onClick={handleLogout}
           disabled={isLoggingOut}
         >

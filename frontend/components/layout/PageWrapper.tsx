@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
 import { NotchHeader } from './NotchHeader';
 import { SessionTimeoutModal } from './SessionTimeoutModal';
 import { authClient } from '@/lib/auth-client';
@@ -10,7 +11,12 @@ import { useRouter } from 'next/navigation';
 // Lazy load heavy Three.js shader background
 const AnimatedShaderBackground = dynamic(
   () => import('@/components/ui/animated-shader-background'),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 -z-10 bg-black" />
+    )
+  }
 );
 
 interface PageWrapperProps {
@@ -22,11 +28,15 @@ const WARNING_THRESHOLD = 5 * 60 * 1000; // Show warning 5 minutes before timeou
 
 export function PageWrapper({ children }: PageWrapperProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [showTimeoutModal, setShowTimeoutModal] = useState(false);
   const [remainingMinutes, setRemainingMinutes] = useState(5);
   const [user, setUser] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Only load shader on specific pages to reduce bundle size
+  const shouldLoadShader = pathname === '/' || pathname === '/chat' || pathname === '/todo';
 
   // Fetch user session
   useEffect(() => {
@@ -107,7 +117,11 @@ export function PageWrapper({ children }: PageWrapperProps) {
 
   return (
     <>
-      <AnimatedShaderBackground />
+      {shouldLoadShader ? (
+        <AnimatedShaderBackground />
+      ) : (
+        <div className="fixed inset-0 -z-10 bg-black" />
+      )}
       <NotchHeader
         isAuthenticated={isAuthenticated}
         userName={user?.name}

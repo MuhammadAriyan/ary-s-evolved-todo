@@ -1,7 +1,15 @@
 """Pydantic schemas for chat API requests and responses."""
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal, Union
 from datetime import datetime
+from enum import Enum
+
+
+class LanguageHint(str, Enum):
+    """Language hint for faster agent routing."""
+    ENGLISH = "en"
+    URDU = "ur"
+    AUTO = "auto"  # Let orchestrator detect
 
 
 class SendMessageRequest(BaseModel):
@@ -126,3 +134,86 @@ class UnifiedChatResponse(BaseModel):
     )
     agent_name: str = Field(default="Aren", description="Name of the responding agent")
     agent_icon: str = Field(default="🤖", description="Icon of the responding agent")
+
+
+# ============================================================================
+# Streaming Chat Schemas (for SSE endpoint)
+# ============================================================================
+
+
+class ChatStreamRequest(BaseModel):
+    """Request schema for streaming chat endpoint.
+
+    Creates a new conversation if conversation_id is not provided.
+    """
+
+    message: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="User message content"
+    )
+    conversation_id: Optional[str] = Field(
+        default=None,
+        description="Existing conversation ID. If null, creates new conversation."
+    )
+    language_hint: LanguageHint = Field(
+        default=LanguageHint.AUTO,
+        description="Language hint for faster routing"
+    )
+    context_window: int = Field(
+        default=6,
+        ge=1,
+        le=20,
+        description="Number of previous messages to include as context"
+    )
+
+
+# StreamEvent types for SSE responses
+class TokenEvent(BaseModel):
+    """Token chunk from AI response."""
+    type: Literal["token"] = "token"
+    content: str = Field(..., description="Token chunk from AI response")
+
+
+class AgentChangeEvent(BaseModel):
+    """Agent handoff notification."""
+    type: Literal["agent_change"] = "agent_change"
+    agent: str = Field(..., description="Agent name (e.g., 'Miyu', 'Riven')")
+    icon: str = Field(..., description="Agent icon emoji")
+
+
+class ToolCallEvent(BaseModel):
+    """Tool call notification."""
+    type: Literal["tool_call"] = "tool_call"
+    tool: str = Field(..., description="Tool name being called")
+    args: Optional[dict] = Field(default=None, description="Tool arguments")
+
+
+class ConversationCreatedEvent(BaseModel):
+    """New conversation created notification."""
+    type: Literal["conversation_created"] = "conversation_created"
+    conversation_id: str = Field(..., description="ID of the created conversation")
+
+
+class DoneEvent(BaseModel):
+    """Stream completion notification."""
+    type: Literal["done"] = "done"
+    message_id: str = Field(..., description="ID of the saved assistant message")
+
+
+class ErrorEvent(BaseModel):
+    """Error notification."""
+    type: Literal["error"] = "error"
+    message: str = Field(..., description="Error description")
+
+
+# Union type for all stream events
+StreamEvent = Union[
+    TokenEvent,
+    AgentChangeEvent,
+    ToolCallEvent,
+    ConversationCreatedEvent,
+    DoneEvent,
+    ErrorEvent,
+]

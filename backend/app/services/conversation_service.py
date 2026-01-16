@@ -240,3 +240,44 @@ class ConversationService:
             .order_by(Message.created_at)
         )
         return list(self.session.exec(statement).all())
+
+    def get_optimized_context(
+        self, conversation_id: str, user_id: str, context_window: int = 6
+    ) -> list[dict]:
+        """Get optimized conversation context for AI processing.
+
+        Returns the last N messages formatted for the AI agent,
+        using a sliding window approach for efficient context management.
+
+        Args:
+            conversation_id: The conversation ID
+            user_id: The authenticated user's ID (for isolation)
+            context_window: Number of recent messages to include (default 6, max 20)
+
+        Returns:
+            List of message dicts with 'role' and 'content' keys,
+            ordered chronologically (oldest first within window)
+        """
+        # Enforce context window limits
+        context_window = max(1, min(context_window, 20))
+
+        # Verify conversation ownership first
+        conversation = self.get_conversation(conversation_id, user_id)
+        if not conversation:
+            return []
+
+        # Get the last N messages ordered by creation time descending
+        # then reverse to get chronological order
+        statement = (
+            select(Message)
+            .where(Message.conversation_id == conversation_id)
+            .order_by(Message.created_at.desc())
+            .limit(context_window)
+        )
+        messages = list(self.session.exec(statement).all())
+
+        # Reverse to chronological order and format for AI
+        return [
+            {"role": msg.role, "content": msg.content}
+            for msg in reversed(messages)
+        ]

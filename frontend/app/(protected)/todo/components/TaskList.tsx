@@ -20,7 +20,7 @@ export function TaskList({ tasks, onEdit }: TaskListProps) {
   if (tasks.length === 0) {
     return (
       <div className="py-12 text-center">
-        <p className="text-white/50">No tasks found. Create your first task!</p>
+        <p className="text-white/50 font-chelsea">No tasks found. Create your first task!</p>
       </div>
     )
   }
@@ -41,7 +41,7 @@ export function TaskList({ tasks, onEdit }: TaskListProps) {
 
             <div className="flex-1 min-w-0">
               <h3
-                className={`font-medium ${
+                className={`font-medium font-chelsea ${
                   task.completed ? "line-through text-white/50" : "text-white"
                 }`}
               >

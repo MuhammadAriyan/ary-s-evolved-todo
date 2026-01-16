@@ -43,7 +43,7 @@ function FeaturesSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-chelsea">
             Everything you need to stay{' '}
             <span className="bg-gradient-to-r from-aura-purple via-aura-magenta to-aura-gold bg-clip-text text-transparent">
               organized
@@ -68,7 +68,7 @@ function FeaturesSection() {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-aura-purple/20 to-aura-magenta/20 flex items-center justify-center mb-4 group-hover:from-aura-purple/30 group-hover:to-aura-magenta/30 transition-all">
                 <feature.icon className="w-6 h-6 text-aura-purple" strokeWidth={1.5} />
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+              <h3 className="text-lg font-semibold text-white mb-2 font-chelsea">{feature.title}</h3>
               <p className="text-white/50 text-sm">{feature.description}</p>
             </motion.div>
           ))}
@@ -89,7 +89,7 @@ function CardStackSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-chelsea">
             Explore our{' '}
             <span className="bg-gradient-to-r from-aura-purple via-aura-magenta to-aura-gold bg-clip-text text-transparent">
               products

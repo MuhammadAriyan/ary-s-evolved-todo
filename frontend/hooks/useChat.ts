@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   chatClient,
   createConversation,
@@ -12,6 +12,7 @@ import {
   sendMessage,
   deleteConversation,
   generateTitle,
+  streamMessage,
 } from '@/lib/chat-client'
 import { apiClient } from '@/lib/api-client'
 import { useSession, authClient } from '@/lib/auth-client'
@@ -20,7 +21,26 @@ import type {
   ConversationWithMessages,
   Message,
   InputLanguage,
+  LanguageHint,
+  StreamEvent,
 } from '@/types/chat'
+import {
+  isTokenEvent,
+  isAgentChangeEvent,
+  isToolCallEvent,
+  isConversationCreatedEvent,
+  isDoneEvent,
+  isErrorEvent,
+} from '@/types/chat'
+
+/** Current streaming state */
+export interface StreamingState {
+  isStreaming: boolean;
+  content: string;
+  agentName: string;
+  agentIcon: string;
+  toolCalls: string[];
+}
 
 interface UseChatState {
   conversations: Conversation[]
@@ -30,6 +50,7 @@ interface UseChatState {
   isSending: boolean
   error: string | null
   tokenReady: boolean
+  streaming: StreamingState
 }
 
 interface UseChatActions {
@@ -37,12 +58,21 @@ interface UseChatActions {
   selectConversation: (conversationId: string) => Promise<void>
   createNewConversation: () => Promise<Conversation | null>
   sendChatMessage: (content: string, language?: InputLanguage) => Promise<void>
+  sendStreamingMessage: (content: string, options?: { languageHint?: LanguageHint }) => Promise<void>
   deleteCurrentConversation: () => Promise<void>
   generateConversationTitle: () => Promise<void>
   clearError: () => void
 }
 
 export type UseChatReturn = UseChatState & UseChatActions
+
+const initialStreamingState: StreamingState = {
+  isStreaming: false,
+  content: '',
+  agentName: 'Aren',
+  agentIcon: '🤖',
+  toolCalls: [],
+}
 
 export function useChat(): UseChatReturn {
   const { data: session } = useSession()
@@ -53,6 +83,8 @@ export function useChat(): UseChatReturn {
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tokenReady, setTokenReady] = useState(false)
+  const [streaming, setStreaming] = useState<StreamingState>(initialStreamingState)
+  const tokenRef = useRef<string | null>(null)
 
   // Set JWT token in API client when session changes
   useEffect(() => {
@@ -63,19 +95,23 @@ export function useChat(): UseChatReturn {
 
           if (data?.token) {
             apiClient.setToken(data.token)
+            tokenRef.current = data.token
             setTokenReady(true)
           } else if (error) {
             console.error('Failed to retrieve JWT token for chat:', error)
             apiClient.clearToken()
+            tokenRef.current = null
             setTokenReady(false)
           }
         } catch (err) {
           console.error('Error fetching JWT token for chat:', err)
           apiClient.clearToken()
+          tokenRef.current = null
           setTokenReady(false)
         }
       } else {
         apiClient.clearToken()
+        tokenRef.current = null
         setTokenReady(false)
       }
     }
@@ -194,6 +230,155 @@ export function useChat(): UseChatReturn {
     }
   }, [currentConversation, messages.length])
 
+  const sendStreamingMessage = useCallback(async (
+    content: string,
+    options: { languageHint?: LanguageHint } = {}
+  ) => {
+    if (!content.trim()) {
+      return
+    }
+
+    if (!tokenRef.current) {
+      setError('Not authenticated')
+      return
+    }
+
+    setIsSending(true)
+    setError(null)
+
+    // Optimistically add user message
+    const tempUserMessage: Message = {
+      id: `temp-user-${Date.now()}`,
+      role: 'user',
+      content: content.trim(),
+      agent_name: null,
+      agent_icon: null,
+      created_at: new Date().toISOString(),
+    }
+    setMessages(prev => [...prev, tempUserMessage])
+
+    // Reset streaming state
+    setStreaming({
+      isStreaming: true,
+      content: '',
+      agentName: 'Aren',
+      agentIcon: '🤖',
+      toolCalls: [],
+    })
+
+    let newConversationId: string | null = null
+    let finalContent = ''
+    let finalAgentName = 'Aren'
+    let finalAgentIcon = '🤖'
+    let messageId = ''
+
+    try {
+      const stream = streamMessage(
+        content.trim(),
+        {
+          conversationId: currentConversation?.id ?? null,
+          languageHint: options.languageHint ?? 'auto',
+          contextWindow: 6,
+        },
+        tokenRef.current
+      )
+
+      for await (const event of stream) {
+        if (isConversationCreatedEvent(event)) {
+          newConversationId = event.conversation_id
+          // Create new conversation in state
+          const newConv: Conversation = {
+            id: event.conversation_id,
+            title: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+          setConversations(prev => [newConv, ...prev])
+          setCurrentConversation({ ...newConv, messages: [] })
+        } else if (isTokenEvent(event)) {
+          finalContent += event.content
+          setStreaming(prev => ({
+            ...prev,
+            content: prev.content + event.content,
+          }))
+        } else if (isAgentChangeEvent(event)) {
+          finalAgentName = event.agent
+          finalAgentIcon = event.icon
+          setStreaming(prev => ({
+            ...prev,
+            agentName: event.agent,
+            agentIcon: event.icon,
+          }))
+        } else if (isToolCallEvent(event)) {
+          setStreaming(prev => ({
+            ...prev,
+            toolCalls: [...prev.toolCalls, event.tool],
+          }))
+        } else if (isDoneEvent(event)) {
+          messageId = event.message_id
+        } else if (isErrorEvent(event)) {
+          throw new Error(event.message)
+        }
+      }
+
+      // First, clear streaming state to prevent duplicate display
+      setStreaming(initialStreamingState)
+
+      // Then replace temp user message and add final assistant message
+      const assistantMessage: Message = {
+        id: messageId || `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: finalContent,
+        agent_name: finalAgentName,
+        agent_icon: finalAgentIcon,
+        created_at: new Date().toISOString(),
+      }
+
+      setMessages(prev => {
+        const withoutTemp = prev.filter(m => m.id !== tempUserMessage.id)
+        return [
+          ...withoutTemp,
+          {
+            ...tempUserMessage,
+            id: `user-${Date.now()}`,
+          },
+          assistantMessage,
+        ]
+      })
+
+      // Generate title if this is the first message
+      const conversationId = newConversationId || currentConversation?.id
+      if (conversationId && messages.length === 0) {
+        try {
+          const response = await generateTitle(conversationId)
+          setCurrentConversation(prev => prev ? { ...prev, title: response.title } : null)
+          setConversations(prev =>
+            prev.map(c =>
+              c.id === conversationId ? { ...c, title: response.title } : c
+            )
+          )
+        } catch {
+          // Title generation failure is not critical
+        }
+      }
+    } catch (err) {
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id))
+
+      if (err instanceof Error && err.message.includes('429')) {
+        setError('Rate limit exceeded. Please wait a moment before sending another message.')
+      } else if (err instanceof Error && err.message === 'Unauthorized') {
+        setError('Session expired. Please log in again.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to send message')
+      }
+    } finally {
+      setIsSending(false)
+      // Streaming state already cleared in success path, only clear here if error occurred
+      setStreaming(initialStreamingState)
+    }
+  }, [currentConversation, messages.length])
+
   const deleteCurrentConversation = useCallback(async () => {
     if (!currentConversation) {
       return
@@ -241,11 +426,13 @@ export function useChat(): UseChatReturn {
     isSending,
     error,
     tokenReady,
+    streaming,
     // Actions
     loadConversations,
     selectConversation,
     createNewConversation,
     sendChatMessage,
+    sendStreamingMessage,
     deleteCurrentConversation,
     generateConversationTitle,
     clearError,

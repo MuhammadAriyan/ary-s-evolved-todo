@@ -6,66 +6,52 @@ The server is used by OpenAI Agents via mcp_servers parameter.
 Architecture:
 - MCP server runs as subprocess or in-process
 - Agents connect via MCPServerStdio or MCPServerSse
-- Tools are decorated with @mcp.tool() only
+- Tools are async and run database operations in thread pool (anyio)
 """
 from datetime import datetime, date
 from typing import Optional
-from sqlmodel import select, func
+from sqlmodel import create_engine, Session, select, func
 from sqlalchemy import cast, or_
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from mcp.server.fastmcp import FastMCP
+import os
+import anyio
 
 from app.models.task import Task
-from app.database import get_session
 
 
 # Create MCP server instance
 mcp = FastMCP("Todo Task Server")
 
 
-@mcp.tool()
-def add_task(
+def _get_db_session() -> Session:
+    """Get a fresh database session for MCP tools."""
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL environment variable not set")
+
+    engine = create_engine(
+        database_url,
+        echo=False,
+        pool_pre_ping=True,
+    )
+    return Session(engine)
+
+
+# ============================================================================
+# Synchronous database operations (run in thread pool)
+# ============================================================================
+
+def _add_task_sync(
     user_id: str,
     title: str,
-    description: str = "",
-    priority: str = "Medium",
-    tags: list[str] | None = None,
-    due_date: str | None = None,
+    description: str,
+    priority: str,
+    tags: list[str] | None,
+    parsed_due_date: date | None,
 ) -> dict:
-    """Create a new task for the user.
-
-    Args:
-        user_id: The authenticated user's ID (required for isolation)
-        title: Task title (max 200 characters)
-        description: Optional task description
-        priority: Task priority (High, Medium, Low)
-        tags: Optional list of tags
-        due_date: Optional due date in ISO format (YYYY-MM-DD)
-
-    Returns:
-        dict with task_id and success status
-    """
-    if not title:
-        return {"error": "Title is required"}
-
-    if len(title) > 200:
-        return {"error": "Title must be 200 characters or less"}
-
-    # Validate priority
-    valid_priorities = ["High", "Medium", "Low"]
-    if priority not in valid_priorities:
-        priority = "Medium"
-
-    # Parse due date
-    parsed_due_date = None
-    if due_date:
-        try:
-            parsed_due_date = date.fromisoformat(due_date)
-        except ValueError:
-            return {"error": "Invalid due date format. Use YYYY-MM-DD"}
-
-    try:
-        session = next(get_session())
+    """Sync implementation of add_task."""
+    with _get_db_session() as session:
         task = Task(
             user_id=user_id,
             title=title[:200],
@@ -77,40 +63,22 @@ def add_task(
         session.add(task)
         session.commit()
         session.refresh(task)
-
         return {
             "task_id": task.id,
             "status": "created",
             "title": task.title
         }
-    except Exception as e:
-        return {"error": "Database error occurred"}
 
 
-@mcp.tool()
-def list_tasks(
+def _list_tasks_sync(
     user_id: str,
-    completed: bool | None = None,
-    priority: str | None = None,
-    tags: list[str] | None = None,
-    limit: int = 50,
-) -> list[dict] | dict:
-    """List tasks for the user with optional filters.
-
-    Args:
-        user_id: The authenticated user's ID
-        completed: Filter by completion status (true/false)
-        priority: Filter by priority level (High/Medium/Low)
-        tags: Filter by tags (returns tasks with any matching tag)
-        limit: Maximum number of tasks to return (default 50, max 100)
-
-    Returns:
-        list of task objects or error dict
-    """
-    limit = min(limit, 100)
-
-    try:
-        session = next(get_session())
+    completed: bool | None,
+    priority: str | None,
+    tags: list[str] | None,
+    limit: int,
+) -> list[dict]:
+    """Sync implementation of list_tasks."""
+    with _get_db_session() as session:
         query = select(Task).where(Task.user_id == user_id)
 
         if completed is not None:
@@ -120,7 +88,6 @@ def list_tasks(
             query = query.where(Task.priority == priority)
 
         if tags:
-            # Filter tasks that have any of the specified tags
             for tag in tags:
                 query = query.where(Task.tags.contains(cast([tag], ARRAY(TEXT))))
 
@@ -140,23 +107,11 @@ def list_tasks(
             }
             for task in tasks
         ]
-    except Exception as e:
-        return {"error": "Database error occurred"}
 
 
-@mcp.tool()
-def complete_task(user_id: str, task_id: int) -> dict:
-    """Mark a task as completed.
-
-    Args:
-        user_id: The authenticated user's ID
-        task_id: The task ID to complete
-
-    Returns:
-        dict with success status and confirmation message
-    """
-    try:
-        session = next(get_session())
+def _complete_task_sync(user_id: str, task_id: int) -> dict:
+    """Sync implementation of complete_task."""
+    with _get_db_session() as session:
         task = session.get(Task, task_id)
 
         if not task or task.user_id != user_id:
@@ -169,25 +124,12 @@ def complete_task(user_id: str, task_id: int) -> dict:
         task.updated_at = datetime.utcnow()
         session.add(task)
         session.commit()
-
         return {"task_id": task_id, "status": "completed", "title": task.title}
-    except Exception as e:
-        return {"error": "Database error occurred"}
 
 
-@mcp.tool()
-def uncomplete_task(user_id: str, task_id: int) -> dict:
-    """Reopen a completed task.
-
-    Args:
-        user_id: The authenticated user's ID
-        task_id: The task ID to reopen
-
-    Returns:
-        dict with success status and confirmation message
-    """
-    try:
-        session = next(get_session())
+def _uncomplete_task_sync(user_id: str, task_id: int) -> dict:
+    """Sync implementation of uncomplete_task."""
+    with _get_db_session() as session:
         task = session.get(Task, task_id)
 
         if not task or task.user_id != user_id:
@@ -200,25 +142,12 @@ def uncomplete_task(user_id: str, task_id: int) -> dict:
         task.updated_at = datetime.utcnow()
         session.add(task)
         session.commit()
-
         return {"task_id": task_id, "status": "reopened", "title": task.title}
-    except Exception as e:
-        return {"error": "Database error occurred"}
 
 
-@mcp.tool()
-def delete_task(user_id: str, task_id: int) -> dict:
-    """Delete a task permanently.
-
-    Args:
-        user_id: The authenticated user's ID
-        task_id: The task ID to delete
-
-    Returns:
-        dict with success status and confirmation message
-    """
-    try:
-        session = next(get_session())
+def _delete_task_sync(user_id: str, task_id: int) -> dict:
+    """Sync implementation of delete_task."""
+    with _get_db_session() as session:
         task = session.get(Task, task_id)
 
         if not task or task.user_id != user_id:
@@ -227,38 +156,20 @@ def delete_task(user_id: str, task_id: int) -> dict:
         title = task.title
         session.delete(task)
         session.commit()
-
         return {"task_id": task_id, "status": "deleted", "title": title}
-    except Exception as e:
-        return {"error": "Database error occurred"}
 
 
-@mcp.tool()
-def update_task(
+def _update_task_sync(
     user_id: str,
     task_id: int,
-    title: str | None = None,
-    description: str | None = None,
-    priority: str | None = None,
-    tags: list[str] | None = None,
-    due_date: str | None = None,
+    title: str | None,
+    description: str | None,
+    priority: str | None,
+    tags: list[str] | None,
+    due_date: str | None,
 ) -> dict:
-    """Update task properties.
-
-    Args:
-        user_id: The authenticated user's ID
-        task_id: The task ID to update
-        title: New task title (optional)
-        description: New description (optional)
-        priority: New priority level (optional)
-        tags: New tags list - replaces existing (optional)
-        due_date: New due date in ISO format (optional)
-
-    Returns:
-        dict with success status and list of updated fields
-    """
-    try:
-        session = next(get_session())
+    """Sync implementation of update_task."""
+    with _get_db_session() as session:
         task = session.get(Task, task_id)
 
         if not task or task.user_id != user_id:
@@ -300,40 +211,14 @@ def update_task(
         task.updated_at = datetime.utcnow()
         session.add(task)
         session.commit()
-
-        return {
-            "task_id": task_id,
-            "status": "updated",
-            "title": task.title
-        }
-    except Exception as e:
-        return {"error": "Database error occurred"}
+        return {"task_id": task_id, "status": "updated", "title": task.title}
 
 
-@mcp.tool()
-def search_tasks(
-    user_id: str,
-    query: str,
-    limit: int = 20,
-) -> list[dict] | dict:
-    """Search tasks by keyword.
-
-    Args:
-        user_id: The authenticated user's ID
-        query: Search keyword to match in title or description
-        limit: Maximum number of results (default 20)
-
-    Returns:
-        dict with matching tasks and count
-    """
-    if not query or len(query.strip()) == 0:
-        return {"error": "Search query is required"}
-
-    limit = min(limit, 100)
+def _search_tasks_sync(user_id: str, query: str, limit: int) -> list[dict]:
+    """Sync implementation of search_tasks."""
     search_term = f"%{query.lower()}%"
 
-    try:
-        session = next(get_session())
+    with _get_db_session() as session:
         statement = (
             select(Task)
             .where(
@@ -360,24 +245,11 @@ def search_tasks(
             }
             for task in tasks
         ]
-    except Exception as e:
-        return {"error": "Database error occurred"}
 
 
-@mcp.tool()
-def get_task_analytics(user_id: str) -> dict:
-    """Get task statistics for the user.
-
-    Args:
-        user_id: The authenticated user's ID
-
-    Returns:
-        dict with analytics including counts, completion rate, and breakdowns
-    """
-    try:
-        session = next(get_session())
-
-        # Get all tasks for the user
+def _get_task_analytics_sync(user_id: str) -> dict:
+    """Sync implementation of get_task_analytics."""
+    with _get_db_session() as session:
         tasks = session.exec(
             select(Task).where(Task.user_id == user_id)
         ).all()
@@ -386,16 +258,13 @@ def get_task_analytics(user_id: str) -> dict:
         completed_tasks = sum(1 for t in tasks if t.completed)
         pending_tasks = total_tasks - completed_tasks
 
-        # Calculate completion rate
         completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
 
-        # Count by priority
         by_priority = {"High": 0, "Medium": 0, "Low": 0}
         for task in tasks:
             if task.priority in by_priority:
                 by_priority[task.priority] += 1
 
-        # Count overdue and due today
         today = date.today()
         overdue_tasks = sum(
             1 for t in tasks
@@ -415,8 +284,223 @@ def get_task_analytics(user_id: str) -> dict:
             "overdue_tasks": overdue_tasks,
             "tasks_due_today": tasks_due_today,
         }
+
+
+# ============================================================================
+# Async MCP Tools (run sync operations in thread pool)
+# ============================================================================
+
+@mcp.tool()
+async def add_task(
+    user_id: str,
+    title: str,
+    description: str = "",
+    priority: str = "Medium",
+    tags: list[str] | None = None,
+    due_date: str | None = None,
+) -> dict:
+    """Create a new task for the user.
+
+    Args:
+        user_id: The authenticated user's ID (required for isolation)
+        title: Task title (max 200 characters)
+        description: Optional task description
+        priority: Task priority (High, Medium, Low)
+        tags: Optional list of tags
+        due_date: Optional due date in ISO format (YYYY-MM-DD)
+
+    Returns:
+        dict with task_id and success status
+    """
+    if not title:
+        return {"error": "Title is required"}
+
+    if len(title) > 200:
+        return {"error": "Title must be 200 characters or less"}
+
+    valid_priorities = ["High", "Medium", "Low"]
+    if priority not in valid_priorities:
+        priority = "Medium"
+
+    parsed_due_date = None
+    if due_date:
+        try:
+            parsed_due_date = date.fromisoformat(due_date)
+        except ValueError:
+            return {"error": "Invalid due date format. Use YYYY-MM-DD"}
+
+    try:
+        return await anyio.to_thread.run_sync(
+            lambda: _add_task_sync(user_id, title, description, priority, tags, parsed_due_date)
+        )
     except Exception as e:
-        return {"error": "Database error occurred"}
+        return {"error": f"Database error: {str(e)}"}
+
+
+@mcp.tool()
+async def list_tasks(
+    user_id: str,
+    completed: bool | None = None,
+    priority: str | None = None,
+    tags: list[str] | None = None,
+    limit: int = 50,
+) -> list[dict] | dict:
+    """List tasks for the user with optional filters.
+
+    Args:
+        user_id: The authenticated user's ID
+        completed: Filter by completion status (true/false)
+        priority: Filter by priority level (High/Medium/Low)
+        tags: Filter by tags (returns tasks with any matching tag)
+        limit: Maximum number of tasks to return (default 50, max 100)
+
+    Returns:
+        list of task objects or error dict
+    """
+    limit = min(limit, 100)
+
+    try:
+        return await anyio.to_thread.run_sync(
+            lambda: _list_tasks_sync(user_id, completed, priority, tags, limit)
+        )
+    except Exception as e:
+        return {"error": f"Database error: {str(e)}"}
+
+
+@mcp.tool()
+async def complete_task(user_id: str, task_id: int) -> dict:
+    """Mark a task as completed.
+
+    Args:
+        user_id: The authenticated user's ID
+        task_id: The task ID to complete
+
+    Returns:
+        dict with success status and confirmation message
+    """
+    try:
+        return await anyio.to_thread.run_sync(
+            lambda: _complete_task_sync(user_id, task_id)
+        )
+    except Exception as e:
+        return {"error": f"Database error: {str(e)}"}
+
+
+@mcp.tool()
+async def uncomplete_task(user_id: str, task_id: int) -> dict:
+    """Reopen a completed task.
+
+    Args:
+        user_id: The authenticated user's ID
+        task_id: The task ID to reopen
+
+    Returns:
+        dict with success status and confirmation message
+    """
+    try:
+        return await anyio.to_thread.run_sync(
+            lambda: _uncomplete_task_sync(user_id, task_id)
+        )
+    except Exception as e:
+        return {"error": f"Database error: {str(e)}"}
+
+
+@mcp.tool()
+async def delete_task(user_id: str, task_id: int) -> dict:
+    """Delete a task permanently.
+
+    Args:
+        user_id: The authenticated user's ID
+        task_id: The task ID to delete
+
+    Returns:
+        dict with success status and confirmation message
+    """
+    try:
+        return await anyio.to_thread.run_sync(
+            lambda: _delete_task_sync(user_id, task_id)
+        )
+    except Exception as e:
+        return {"error": f"Database error: {str(e)}"}
+
+
+@mcp.tool()
+async def update_task(
+    user_id: str,
+    task_id: int,
+    title: str | None = None,
+    description: str | None = None,
+    priority: str | None = None,
+    tags: list[str] | None = None,
+    due_date: str | None = None,
+) -> dict:
+    """Update task properties.
+
+    Args:
+        user_id: The authenticated user's ID
+        task_id: The task ID to update
+        title: New task title (optional)
+        description: New description (optional)
+        priority: New priority level (optional)
+        tags: New tags list - replaces existing (optional)
+        due_date: New due date in ISO format (optional)
+
+    Returns:
+        dict with success status and list of updated fields
+    """
+    try:
+        return await anyio.to_thread.run_sync(
+            lambda: _update_task_sync(user_id, task_id, title, description, priority, tags, due_date)
+        )
+    except Exception as e:
+        return {"error": f"Database error: {str(e)}"}
+
+
+@mcp.tool()
+async def search_tasks(
+    user_id: str,
+    query: str,
+    limit: int = 20,
+) -> list[dict] | dict:
+    """Search tasks by keyword.
+
+    Args:
+        user_id: The authenticated user's ID
+        query: Search keyword to match in title or description
+        limit: Maximum number of results (default 20)
+
+    Returns:
+        dict with matching tasks and count
+    """
+    if not query or len(query.strip()) == 0:
+        return {"error": "Search query is required"}
+
+    limit = min(limit, 100)
+
+    try:
+        return await anyio.to_thread.run_sync(
+            lambda: _search_tasks_sync(user_id, query, limit)
+        )
+    except Exception as e:
+        return {"error": f"Database error: {str(e)}"}
+
+
+@mcp.tool()
+async def get_task_analytics(user_id: str) -> dict:
+    """Get task statistics for the user.
+
+    Args:
+        user_id: The authenticated user's ID
+
+    Returns:
+        dict with analytics including counts, completion rate, and breakdowns
+    """
+    try:
+        return await anyio.to_thread.run_sync(
+            lambda: _get_task_analytics_sync(user_id)
+        )
+    except Exception as e:
+        return {"error": f"Database error: {str(e)}"}
 
 
 # Export the MCP server instance
