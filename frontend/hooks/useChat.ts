@@ -94,12 +94,11 @@ export function useChat(): UseChatReturn {
           const { data, error } = await authClient.token()
 
           if (data?.token) {
-            console.log('✅ useChat: Token fetched successfully, length:', data.token.length)
             apiClient.setToken(data.token)
             tokenRef.current = data.token
             setTokenReady(true)
           } else if (error) {
-            console.error('❌ useChat: Failed to retrieve JWT token:', error)
+            console.error('Failed to retrieve JWT token for chat:', error)
             apiClient.clearToken()
             tokenRef.current = null
             setTokenReady(false)
@@ -235,21 +234,15 @@ export function useChat(): UseChatReturn {
     content: string,
     options: { languageHint?: LanguageHint } = {}
   ) => {
-    console.log('🚀 sendStreamingMessage called with:', { content, hasToken: !!tokenRef.current })
-
     if (!content.trim()) {
-      console.log('⚠️ Empty content, returning')
       return
     }
 
     if (!tokenRef.current) {
-      console.error('❌ useChat: No token in tokenRef!')
-      alert('DEBUG: No authentication token found!')
       setError('Not authenticated')
       return
     }
 
-    console.log('✅ useChat: Token available, length:', tokenRef.current.length)
     setIsSending(true)
     setError(null)
 

@@ -15,8 +15,15 @@ import type {
 } from '@/types/chat'
 
 const CHAT_BASE = '/api/v1/chat'
-// Use relative URL in production (leverages Vercel proxy), absolute in development
+
+// CRITICAL: For chat streaming, we MUST bypass Vercel proxy because it strips Authorization headers
+// Use direct HuggingFace URL in production, localhost in development
 const API_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? 'https://maryanrar-ary-todo-backend.hf.space' // Production: direct to HuggingFace (CORS configured)
+  : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000' // Development: use localhost
+
+// For non-streaming endpoints, use Vercel proxy (works fine for regular requests)
+const API_URL_PROXY = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   ? '' // Production: use relative URLs to leverage Vercel proxy
   : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000' // Development: use localhost
 
@@ -76,6 +83,7 @@ async function fetchWithRetry(
 
 /**
  * Create a new conversation
+ * Uses apiClient which goes through Vercel proxy (works for non-streaming)
  */
 export async function createConversation(): Promise<Conversation> {
   return apiClient.post<Conversation>(`${CHAT_BASE}/conversations`, {})
@@ -186,13 +194,7 @@ export async function* streamMessage(
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
-    console.log('🔑 Chat: Token present, length:', token.length)
-  } else {
-    console.error('❌ Chat: No token provided!')
   }
-
-  console.log('📡 Chat: Sending request to:', `${API_URL}${CHAT_BASE}/stream`)
-  console.log('📡 Chat: Headers:', Object.keys(headers))
 
   // Use direct fetch for streaming (no retry, no timeout)
   // Streaming connections need to stay open indefinitely while AI processes
@@ -219,7 +221,7 @@ export async function* streamMessage(
 
   if (!response.ok) {
     // Log detailed error information for debugging
-    console.error('❌ Chat stream error:', {
+    console.error('Chat stream error:', {
       status: response.status,
       statusText: response.statusText,
       url: response.url,
@@ -230,11 +232,9 @@ export async function* streamMessage(
     try {
       const errorData = await response.json()
       errorDetail = errorData.detail || errorData.message || response.statusText
-      console.error('❌ Error details:', errorData)
-      alert(`DEBUG: Chat error ${response.status}: ${errorDetail}`)
+      console.error('Error details:', errorData)
     } catch {
       // Response body is not JSON, use statusText
-      alert(`DEBUG: Chat error ${response.status}: ${response.statusText}`)
     }
 
     if (response.status === 401) {
