@@ -30,21 +30,36 @@ const nextConfig = {
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: ['framer-motion', '@tanstack/react-query', 'recharts'],
+    // Exclude large ML packages from server components (they're only used client-side)
+    serverComponentsExternalPackages: ['@huggingface/transformers', 'sharp', 'onnxruntime-node'],
   },
 
-  // Production optimizations (swcMinify removed - enabled by default in Next.js 15)
+  // Production optimizations
   poweredByHeader: false,
 
-  // Exclude large packages from serverless functions to stay under 250 MB limit
+  // Webpack configuration to exclude large packages from serverless functions
+  // Voice input uses dynamic imports and only runs in the browser, so this is safe
   webpack: (config, { isServer }) => {
     if (isServer) {
-      // Exclude @huggingface/transformers from serverless functions
-      // This package is only used client-side for voice input
-      config.externals = config.externals || []
-      config.externals.push({
+      // Mark these packages as external for serverless functions
+      // They're only used client-side with dynamic imports
+      config.externals = [...(config.externals || []), {
         '@huggingface/transformers': 'commonjs @huggingface/transformers',
-      })
+        'sharp': 'commonjs sharp',
+        'onnxruntime-node': 'commonjs onnxruntime-node',
+      }]
     }
+
+    // Ignore node-specific modules in client bundle
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      }
+    }
+
     return config
   },
 }
