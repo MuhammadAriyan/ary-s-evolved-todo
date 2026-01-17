@@ -168,7 +168,7 @@ function TodoPageContent() {
         {/* Page Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold text-white sm:text-3xl">My Todos</h1>
+            <h1 className="text-2xl font-semibold text-white sm:text-3xl font-chelsea">My Todos</h1>
             <p className="text-sm text-white/50">
               Manage your tasks and stay organized
             </p>

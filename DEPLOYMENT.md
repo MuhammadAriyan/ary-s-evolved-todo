@@ -4,12 +4,104 @@ This guide covers deploying the full-stack todo application to production enviro
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Database Setup (Neon)](#database-setup-neon)
-3. [Backend Deployment](#backend-deployment)
-4. [Frontend Deployment](#frontend-deployment)
-5. [Environment Variables](#environment-variables)
-6. [Post-Deployment](#post-deployment)
+1. [Quick Start Deployment](#quick-start-deployment)
+2. [Prerequisites](#prerequisites)
+3. [Database Setup (Neon)](#database-setup-neon)
+4. [Backend Deployment](#backend-deployment)
+5. [Frontend Deployment](#frontend-deployment)
+6. [Environment Variables](#environment-variables)
+7. [Post-Deployment](#post-deployment)
+
+## Quick Start Deployment
+
+**Optimized for Vercel (Frontend) + HuggingFace Spaces (Backend)**
+
+### 1. Deploy Frontend to Vercel
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy from frontend directory
+cd frontend
+vercel --prod
+
+# Set environment variables
+vercel env add BETTER_AUTH_URL
+vercel env add BETTER_AUTH_SECRET
+vercel env add DATABASE_URL
+vercel env add GOOGLE_CLIENT_ID
+vercel env add GOOGLE_CLIENT_SECRET
+vercel env add NEXT_PUBLIC_API_URL
+
+# Redeploy with environment variables
+vercel --prod
+```
+
+### 2. Deploy Backend to HuggingFace Spaces
+
+```bash
+# Create new Space at https://huggingface.co/spaces
+# Choose: Docker SDK, CPU basic (free)
+
+# Add repository secrets in Space settings:
+# - DATABASE_URL
+# - CORS_ORIGINS (your Vercel domain)
+# - BETTER_AUTH_URL (your Vercel domain)
+# - JWT_SECRET_KEY
+# - AI_API_KEY (optional, for chatbot)
+
+# Push to HuggingFace
+cd backend
+git init
+git remote add hf https://huggingface.co/spaces/YOUR_USERNAME/SPACE_NAME
+git add .
+git commit -m "Deploy backend"
+git push hf main
+```
+
+### 3. Verify Deployment
+
+```bash
+# Check backend health (basic liveness)
+curl https://YOUR_USERNAME-SPACE_NAME.hf.space/health
+# Expected: {"status": "healthy"}
+
+# Check backend readiness (database + OpenAI API)
+curl https://YOUR_USERNAME-SPACE_NAME.hf.space/health/ready
+# Expected: {"status": "ready", "checks": {...}}
+
+# Check frontend
+open https://your-app.vercel.app
+
+# Test CORS
+# Open browser DevTools → Network tab
+# Send a message in chat
+# Verify no CORS errors
+```
+
+### 4. Update Frontend API URL
+
+After backend is deployed, update the frontend's `vercel.json`:
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://YOUR_USERNAME-SPACE_NAME.hf.space/api/:path*"
+    }
+  ]
+}
+```
+
+Then redeploy:
+```bash
+cd frontend
+vercel --prod
+```
+
+**Note**: HuggingFace Spaces free tier sleeps after 15 minutes of inactivity. First request after sleep takes 30-60 seconds.
 
 ## Prerequisites
 

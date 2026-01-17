@@ -1,6 +1,7 @@
 'use client';
 
-import { Linkedin, Github } from 'lucide-react';
+import { Linkedin, Github, MessageSquare, ClipboardList } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { UserDropdown } from './UserDropdown';
 
@@ -22,11 +23,26 @@ export function NotchHeader({
     <header className="fixed top-0 left-0 right-0 z-40 px-4 pt-4">
       <div className="mx-auto max-w-7xl">
         <nav className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-2 flex items-center justify-between shadow-lg shadow-sky-cyan-500/5">
-          <span className="text-base font-semibold text-white">
+          <span className="text-base font-semibold text-white font-chelsea">
             Ary&apos;s Evolved Todo
           </span>
 
           <div className="flex items-center gap-1">
+            {isAuthenticated && (
+              <>
+                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
+                  <Link href="/todo" aria-label="Todo List">
+                    <ClipboardList className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
+                  <Link href="/chat" aria-label="AI Chat">
+                    <MessageSquare className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </>
+            )}
+
             {linkedinUrl && (
               <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
                 <a

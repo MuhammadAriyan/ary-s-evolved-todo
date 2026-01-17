@@ -217,6 +217,8 @@ See `.specify/memory/constitution.md` for code quality, testing, performance, se
 - Neon PostgreSQL (serverless) with tables: users (Better Auth managed), tasks (user_id FK), indexes on user_id, completed, tags (GIN array), due_date (001-fullstack-web-app)
 - TypeScript 5.x with Next.js 16+ (App Router) (004-sky-aura-glass)
 - Neon PostgreSQL (existing, no changes required) (004-sky-aura-glass)
+- Python 3.12+ (backend), TypeScript 5.x (frontend) + FastAPI, OpenAI Agents SDK, Next.js 15, Tailwind CSS (006-chatbot-optimization)
+- PostgreSQL (Neon) - no schema changes required (006-chatbot-optimization)
 
 ## Recent Changes
 - 001-in-memory-todo: Added Python 3.13+ + Python standard library only (no external dependencies)

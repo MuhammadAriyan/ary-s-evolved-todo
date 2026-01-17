@@ -90,7 +90,7 @@ export function Footer() {
             <Link href="/" className="inline-block mb-4">
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="text-2xl font-bold bg-gradient-to-r from-aura-purple via-aura-magenta to-aura-gold bg-clip-text text-transparent"
+                className="text-2xl font-bold bg-gradient-to-r from-aura-purple via-aura-magenta to-aura-gold bg-clip-text text-transparent font-chelsea"
               >
                 Ary's Todo
               </motion.div>
@@ -103,7 +103,7 @@ export function Footer() {
           {/* Navigation */}
           {navigation.sections.map((section) => (
             <div key={section.id}>
-              <h3 className="text-sm font-semibold text-white/80 mb-4">{section.name}</h3>
+              <h3 className="text-sm font-semibold text-white/80 mb-4 font-chelsea">{section.name}</h3>
               <ul className="space-y-3">
                 {section.items.map((item) => (
                   <li key={item.name}>

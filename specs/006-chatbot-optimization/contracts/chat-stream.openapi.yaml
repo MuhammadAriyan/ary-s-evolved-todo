@@ -1,0 +1,166 @@
+openapi: 3.1.0
+info:
+  title: Chat Streaming API
+  description: SSE streaming endpoint for AI chatbot
+  version: 1.0.0
+
+paths:
+  /api/v1/chat/stream:
+    post:
+      summary: Stream chat response
+      description: |
+        Send a message and receive streaming response via Server-Sent Events.
+        If no conversation_id is provided, a new conversation is created automatically.
+      operationId: streamChat
+      tags:
+        - Chat
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatStreamRequest'
+      responses:
+        '200':
+          description: SSE stream of chat events
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/StreamEvent'
+        '401':
+          description: Unauthorized
+        '422':
+          description: Validation error
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ChatStreamRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: User message content
+          example: "Add a task to buy groceries"
+        conversation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Existing conversation ID. If null, creates new conversation.
+        language_hint:
+          type: string
+          enum: [en, ur, auto]
+          default: auto
+          description: Language hint for faster routing
+        context_window:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 6
+          description: Number of previous messages to include as context
+
+    StreamEvent:
+      oneOf:
+        - $ref: '#/components/schemas/TokenEvent'
+        - $ref: '#/components/schemas/AgentChangeEvent'
+        - $ref: '#/components/schemas/ToolCallEvent'
+        - $ref: '#/components/schemas/ConversationCreatedEvent'
+        - $ref: '#/components/schemas/DoneEvent'
+        - $ref: '#/components/schemas/ErrorEvent'
+
+    TokenEvent:
+      type: object
+      required:
+        - type
+        - content
+      properties:
+        type:
+          type: string
+          const: token
+        content:
+          type: string
+          description: Token chunk from AI response
+
+    AgentChangeEvent:
+      type: object
+      required:
+        - type
+        - agent
+        - icon
+      properties:
+        type:
+          type: string
+          const: agent_change
+        agent:
+          type: string
+          description: Agent name (e.g., "Miyu", "Riven")
+        icon:
+          type: string
+          description: Agent icon emoji
+
+    ToolCallEvent:
+      type: object
+      required:
+        - type
+        - tool
+      properties:
+        type:
+          type: string
+          const: tool_call
+        tool:
+          type: string
+          description: Tool name being called
+        args:
+          type: object
+          description: Tool arguments
+
+    ConversationCreatedEvent:
+      type: object
+      required:
+        - type
+        - conversation_id
+      properties:
+        type:
+          type: string
+          const: conversation_created
+        conversation_id:
+          type: string
+          format: uuid
+
+    DoneEvent:
+      type: object
+      required:
+        - type
+        - message_id
+      properties:
+        type:
+          type: string
+          const: done
+        message_id:
+          type: string
+          format: uuid
+          description: ID of the saved assistant message
+
+    ErrorEvent:
+      type: object
+      required:
+        - type
+        - message
+      properties:
+        type:
+          type: string
+          const: error
+        message:
+          type: string
+          description: Error description

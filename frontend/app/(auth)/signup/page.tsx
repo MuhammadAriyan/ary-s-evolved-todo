@@ -57,7 +57,7 @@ export default function SignupPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <UserPlus className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Join Us</CardTitle>
+          <CardTitle className="text-2xl font-chelsea">Join Us</CardTitle>
           <CardDescription>Create your account</CardDescription>
         </CardHeader>
 
