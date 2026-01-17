@@ -34,6 +34,19 @@ const nextConfig = {
 
   // Production optimizations (swcMinify removed - enabled by default in Next.js 15)
   poweredByHeader: false,
+
+  // Exclude large packages from serverless functions to stay under 250 MB limit
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Exclude @huggingface/transformers from serverless functions
+      // This package is only used client-side for voice input
+      config.externals = config.externals || []
+      config.externals.push({
+        '@huggingface/transformers': 'commonjs @huggingface/transformers',
+      })
+    }
+    return config
+  },
 }
 
 // Wrap with bundle analyzer
