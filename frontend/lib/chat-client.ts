@@ -262,6 +262,9 @@ export async function* streamMessage(
 
   const decoder = new TextDecoder()
   let buffer = ''
+  let eventCount = 0
+
+  console.log('🟢 Stream started, reading data...')
 
   try {
     while (true) {
@@ -269,6 +272,7 @@ export async function* streamMessage(
       try {
         result = await reader.read()
       } catch (error) {
+        console.error('🔴 Stream read error:', error)
         // Handle stream read errors (connection dropped, etc.)
         if (error instanceof TypeError) {
           throw new Error('Connection lost during streaming')
@@ -279,10 +283,13 @@ export async function* streamMessage(
       const { done, value } = result
 
       if (done) {
+        console.log(`🟢 Stream ended. Total events: ${eventCount}`)
         break
       }
 
-      buffer += decoder.decode(value, { stream: true })
+      const chunk = decoder.decode(value, { stream: true })
+      console.log('📦 Received chunk:', chunk.substring(0, 100))
+      buffer += chunk
 
       // Process complete SSE messages (separated by double newlines)
       const lines = buffer.split('\n\n')
@@ -293,13 +300,19 @@ export async function* streamMessage(
           const jsonStr = line.slice(6) // Remove 'data: ' prefix
           try {
             const event = JSON.parse(jsonStr) as StreamEvent
+            console.log('✅ Parsed event:', event.type)
+            eventCount++
             yield event
-          } catch {
-            console.warn('Failed to parse SSE event:', jsonStr)
+          } catch (e) {
+            console.error('🔴 Failed to parse SSE event:', jsonStr, e)
           }
         }
       }
     }
+  } catch (error) {
+    console.error('🔴 Stream processing error:', error)
+    throw error
+  }
 
     // Process any remaining data in buffer
     if (buffer.startsWith('data: ')) {
