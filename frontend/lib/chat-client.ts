@@ -264,6 +264,7 @@ export async function* streamMessage(
   let buffer = ''
   let eventCount = 0
 
+  alert('🟢 STREAM STARTED - Check console now!')
   console.log('🟢 Stream started, reading data...')
 
   try {
@@ -272,6 +273,7 @@ export async function* streamMessage(
       try {
         result = await reader.read()
       } catch (error) {
+        alert('🔴 STREAM READ ERROR: ' + error)
         console.error('🔴 Stream read error:', error)
         // Handle stream read errors (connection dropped, etc.)
         if (error instanceof TypeError) {
@@ -283,6 +285,7 @@ export async function* streamMessage(
       const { done, value } = result
 
       if (done) {
+        alert(`🟢 STREAM ENDED - Got ${eventCount} events`)
         console.log(`🟢 Stream ended. Total events: ${eventCount}`)
         break
       }
