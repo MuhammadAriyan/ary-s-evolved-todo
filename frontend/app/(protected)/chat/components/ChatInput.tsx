@@ -1,10 +1,19 @@
 'use client'
 
 import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react'
+import dynamic from 'next/dynamic'
 import { Send, Loader2 } from 'lucide-react'
-import { VoiceInputButton } from './VoiceInputButton'
 import type { VoiceLanguage } from '@/hooks/useVoiceInput'
 import { cn } from '@/lib/utils'
+
+// Dynamically import VoiceInputButton to prevent @huggingface/transformers from being bundled in serverless functions
+const VoiceInputButton = dynamic(
+  () => import('./VoiceInputButton').then(mod => ({ default: mod.VoiceInputButton })),
+  {
+    ssr: false,
+    loading: () => null
+  }
+)
 
 interface ChatInputProps {
   onSend: (message: string, language?: VoiceLanguage) => void
