@@ -209,16 +209,33 @@ export async function* streamMessage(
   }
 
   if (!response.ok) {
+    // Log detailed error information for debugging
+    console.error('❌ Chat stream error:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
+    })
+
+    // Try to get error details from response body
+    let errorDetail = response.statusText
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || response.statusText
+      console.error('❌ Error details:', errorData)
+    } catch {
+      // Response body is not JSON, use statusText
+    }
+
     if (response.status === 401) {
-      throw new Error('Unauthorized')
+      throw new Error('Authentication failed. Please log in again.')
     }
     if (response.status === 404) {
-      throw new Error('Conversation not found')
+      throw new Error('Chat endpoint not found. Please refresh the page.')
     }
     if (response.status === 429) {
-      throw new Error('Rate limit exceeded')
+      throw new Error('Rate limit exceeded. Please wait a moment.')
     }
-    throw new Error(`Stream error: ${response.statusText}`)
+    throw new Error(`Chat error (${response.status}): ${errorDetail}`)
   }
 
   const reader = response.body?.getReader()
