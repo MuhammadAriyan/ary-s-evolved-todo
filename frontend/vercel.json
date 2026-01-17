@@ -27,8 +27,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://maryanrar-ary-todo-backend.hf.space/api/:path*"
+      "source": "/api/v1/:path*",
+      "destination": "https://maryanrar-ary-todo-backend.hf.space/api/v1/:path*"
     }
   ]
 }
