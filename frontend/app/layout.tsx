@@ -34,6 +34,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Ary's Evolved Todo</title>
+        <meta name="description" content="AI-powered todo application with chat interface" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Chelsea+Market&display=swap" rel="stylesheet" />
