@@ -1,87 +1,136 @@
-"""Rate limiting middleware for chat endpoints."""
-import time
-from collections import defaultdict
+"""
+Rate limiting middleware using Redis state store via Dapr.
+
+Implements token bucket algorithm for distributed rate limiting.
+"""
+
+from fastapi import Request, HTTPException
+from dapr.clients import DaprClient
+from datetime import datetime
+import logging
+from typing import Optional
 from functools import wraps
 from typing import Callable
-from fastapi import HTTPException, Request
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
-    """In-memory rate limiter using sliding window algorithm.
+    """Rate limiting using Redis state store via Dapr for distributed rate limiting"""
 
-    Limits requests per user within a time window.
-    """
-
-    def __init__(self, max_requests: int = 5, window_seconds: int = 60):
+    def __init__(self, store_name: str = "redis-state", max_requests: int = 100, window_seconds: int = 60):
         """Initialize rate limiter.
 
         Args:
-            max_requests: Maximum requests allowed per window (default: 5)
+            store_name: Dapr state store name (default: redis-state)
+            max_requests: Maximum requests allowed per window (default: 100)
             window_seconds: Time window in seconds (default: 60)
         """
+        self.store_name = store_name
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        # Store request timestamps per user: {user_id: [timestamp1, timestamp2, ...]}
-        self._requests: dict[str, list[float]] = defaultdict(list)
 
-    def _cleanup_old_requests(self, user_id: str, current_time: float) -> None:
-        """Remove requests outside the current window.
+    async def check_rate_limit(
+        self,
+        user_id: str,
+        limit: Optional[int] = None,
+        window_seconds: Optional[int] = None
+    ) -> tuple[bool, int, int]:
+        """
+        Check if user has exceeded rate limit.
 
         Args:
-            user_id: The user identifier
-            current_time: Current timestamp
+            user_id: User identifier
+            limit: Maximum requests per window (uses instance default if None)
+            window_seconds: Time window in seconds (uses instance default if None)
+
+        Returns:
+            Tuple of (allowed, remaining, reset_time)
         """
-        cutoff = current_time - self.window_seconds
-        self._requests[user_id] = [
-            ts for ts in self._requests[user_id] if ts > cutoff
-        ]
+        limit = limit or self.max_requests
+        window_seconds = window_seconds or self.window_seconds
+
+        try:
+            async with DaprClient() as client:
+                # Use minute-based key for rate limiting
+                current_minute = datetime.utcnow().strftime('%Y%m%d%H%M')
+                key = f"rate_limit:{user_id}:{current_minute}"
+
+                # Get current count
+                state = await client.get_state(
+                    store_name=self.store_name,
+                    key=key
+                )
+
+                count = int(state.data.decode('utf-8')) if state.data else 0
+
+                if count >= limit:
+                    logger.warning(
+                        f"Rate limit exceeded for user {user_id}",
+                        extra={"user_id": user_id, "count": count, "limit": limit}
+                    )
+                    # Calculate seconds until reset
+                    reset_time = window_seconds - (datetime.utcnow().second)
+                    return False, 0, reset_time
+
+                # Increment count
+                new_count = count + 1
+                await client.save_state(
+                    store_name=self.store_name,
+                    key=key,
+                    value=str(new_count),
+                    state_metadata={"ttlInSeconds": str(window_seconds)}
+                )
+
+                remaining = limit - new_count
+                reset_time = window_seconds - (datetime.utcnow().second)
+
+                return True, remaining, reset_time
+
+        except Exception as e:
+            logger.error(
+                f"Rate limit check failed: {e}",
+                extra={"user_id": user_id},
+                exc_info=True
+            )
+            # Fail open - allow request if rate limiter is down
+            return True, limit, window_seconds
 
     def is_allowed(self, user_id: str) -> bool:
-        """Check if a request is allowed for the user.
-
-        Args:
-            user_id: The user identifier
-
-        Returns:
-            bool: True if request is allowed, False if rate limited
-        """
-        current_time = time.time()
-        self._cleanup_old_requests(user_id, current_time)
-
-        if len(self._requests[user_id]) >= self.max_requests:
-            return False
-
-        self._requests[user_id].append(current_time)
-        return True
+        """Legacy sync method for backward compatibility - not recommended for async code"""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            allowed, _, _ = loop.run_until_complete(
+                self.check_rate_limit(user_id, self.max_requests, self.window_seconds)
+            )
+            return allowed
+        except Exception:
+            return True
 
     def get_remaining(self, user_id: str) -> int:
-        """Get remaining requests for the user in current window.
-
-        Args:
-            user_id: The user identifier
-
-        Returns:
-            int: Number of remaining requests
-        """
-        current_time = time.time()
-        self._cleanup_old_requests(user_id, current_time)
-        return max(0, self.max_requests - len(self._requests[user_id]))
+        """Legacy sync method for backward compatibility"""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            _, remaining, _ = loop.run_until_complete(
+                self.check_rate_limit(user_id, self.max_requests, self.window_seconds)
+            )
+            return remaining
+        except Exception:
+            return self.max_requests
 
     def get_reset_time(self, user_id: str) -> float:
-        """Get seconds until rate limit resets.
-
-        Args:
-            user_id: The user identifier
-
-        Returns:
-            float: Seconds until oldest request expires from window
-        """
-        if not self._requests[user_id]:
-            return 0
-
-        oldest = min(self._requests[user_id])
-        reset_at = oldest + self.window_seconds
-        return max(0, reset_at - time.time())
+        """Legacy sync method for backward compatibility"""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            _, _, reset_time = loop.run_until_complete(
+                self.check_rate_limit(user_id, self.max_requests, self.window_seconds)
+            )
+            return float(reset_time)
+        except Exception:
+            return 0.0
 
 
 # Global rate limiter instance for chat messages (5 per minute)
