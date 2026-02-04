@@ -1,0 +1,264 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version/Tag to deploy (e.g., v1.0.0 or commit SHA)'
+        required: true
+        type: string
+      confirm:
+        description: 'Type "DEPLOY" to confirm production deployment'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/todo
+  CLUSTER_NAME: oke-production
+  NAMESPACE: production
+
+jobs:
+  validate:
+    name: Validate Deployment Request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "DEPLOY" ]; then
+            echo "❌ Deployment not confirmed. Please type 'DEPLOY' to proceed."
+            exit 1
+          fi
+          echo "✅ Deployment confirmed"
+
+      - name: Validate version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            echo "❌ Version is required"
+            exit 1
+          fi
+          echo "✅ Deploying version: $VERSION"
+
+  deploy:
+    name: Deploy to Production Environment
+    runs-on: ubuntu-latest
+    needs: validate
+    environment:
+      name: production
+      url: https://todo.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.13.0'
+
+      - name: Configure kubectl for Oracle OKE
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.OKE_KUBECONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+          kubectl config use-context oke-production
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy secrets
+        run: |
+          kubectl create secret generic backend-secrets \
+            --from-literal=database-url="${{ secrets.DATABASE_URL_PROD }}" \
+            --from-literal=redis-url="${{ secrets.REDIS_URL_PROD }}" \
+            --from-literal=kafka-brokers="${{ secrets.KAFKA_BROKERS_PROD }}" \
+            --from-literal=kafka-username="${{ secrets.KAFKA_USERNAME_PROD }}" \
+            --from-literal=kafka-password="${{ secrets.KAFKA_PASSWORD_PROD }}" \
+            --from-literal=better-auth-secret="${{ secrets.BETTER_AUTH_SECRET_PROD }}" \
+            --from-literal=openai-api-key="${{ secrets.OPENAI_API_KEY_PROD }}" \
+            --from-literal=sendgrid-api-key="${{ secrets.SENDGRID_API_KEY_PROD }}" \
+            --namespace=${{ env.NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy Backend API
+        run: |
+          helm upgrade --install backend-api ./infrastructure/helm/backend \
+            --namespace=${{ env.NAMESPACE }} \
+            --set image.tag=${{ github.event.inputs.version }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend-api \
+            --set ingress.hosts[0].host=api.todo.example.com \
+            --set replicaCount=3 \
+            --set autoscaling.minReplicas=3 \
+            --set autoscaling.maxReplicas=20 \
+            --wait --timeout=15m
+
+      - name: Deploy Frontend
+        run: |
+          helm upgrade --install frontend ./infrastructure/helm/frontend \
+            --namespace=${{ env.NAMESPACE }} \
+            --set image.tag=${{ github.event.inputs.version }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend \
+            --set ingress.hosts[0].host=todo.example.com \
+            --set env[0].value=https://api.todo.example.com \
+            --set replicaCount=3 \
+            --set autoscaling.minReplicas=3 \
+            --set autoscaling.maxReplicas=20 \
+            --wait --timeout=15m
+
+      - name: Deploy WebSocket Sync Service
+        run: |
+          helm upgrade --install websocket-sync ./infrastructure/helm/websocket-sync \
+            --namespace=${{ env.NAMESPACE }} \
+            --set image.tag=${{ github.event.inputs.version }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-websocket-sync \
+            --set ingress.hosts[0].host=ws.todo.example.com \
+            --set replicaCount=3 \
+            --set autoscaling.minReplicas=3 \
+            --set autoscaling.maxReplicas=15 \
+            --wait --timeout=15m
+
+      - name: Deploy Notification Service
+        run: |
+          helm upgrade --install notification ./infrastructure/helm/notification \
+            --namespace=${{ env.NAMESPACE }} \
+            --set image.tag=${{ github.event.inputs.version }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-notification \
+            --set replicaCount=3 \
+            --set autoscaling.minReplicas=3 \
+            --set autoscaling.maxReplicas=10 \
+            --wait --timeout=15m
+
+      - name: Wait for deployments to be ready
+        run: |
+          kubectl wait --for=condition=available --timeout=600s \
+            deployment/backend-api \
+            deployment/frontend \
+            deployment/websocket-sync \
+            deployment/notification \
+            --namespace=${{ env.NAMESPACE }}
+
+      - name: Run comprehensive health checks
+        run: |
+          # Wait for services to be fully ready
+          sleep 60
+
+          # Check Backend API health
+          BACKEND_URL="https://api.todo.example.com/health"
+          echo "Checking Backend API health at $BACKEND_URL"
+          for i in {1..5}; do
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" $BACKEND_URL)
+            if [ $RESPONSE -eq 200 ]; then
+              echo "✅ Backend API health check passed (attempt $i)"
+              break
+            fi
+            if [ $i -eq 5 ]; then
+              echo "❌ Backend API health check failed after 5 attempts"
+              exit 1
+            fi
+            sleep 10
+          done
+
+          # Check Frontend health
+          FRONTEND_URL="https://todo.example.com"
+          echo "Checking Frontend health at $FRONTEND_URL"
+          for i in {1..5}; do
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" $FRONTEND_URL)
+            if [ $RESPONSE -eq 200 ]; then
+              echo "✅ Frontend health check passed (attempt $i)"
+              break
+            fi
+            if [ $i -eq 5 ]; then
+              echo "❌ Frontend health check failed after 5 attempts"
+              exit 1
+            fi
+            sleep 10
+          done
+
+          # Check WebSocket Sync health
+          WS_URL="https://ws.todo.example.com/health"
+          echo "Checking WebSocket Sync health at $WS_URL"
+          for i in {1..5}; do
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" $WS_URL)
+            if [ $RESPONSE -eq 200 ]; then
+              echo "✅ WebSocket Sync health check passed (attempt $i)"
+              break
+            fi
+            if [ $i -eq 5 ]; then
+              echo "❌ WebSocket Sync health check failed after 5 attempts"
+              exit 1
+            fi
+            sleep 10
+          done
+
+          echo "✅ All health checks passed"
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests..."
+          # Add smoke test commands here
+          # Example: curl -X POST https://api.todo.example.com/api/tasks -H "Authorization: Bearer $TEST_TOKEN" -d '{"title":"Smoke test"}'
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed, initiating rollback..."
+          helm rollback backend-api --namespace=${{ env.NAMESPACE }}
+          helm rollback frontend --namespace=${{ env.NAMESPACE }}
+          helm rollback websocket-sync --namespace=${{ env.NAMESPACE }}
+          helm rollback notification --namespace=${{ env.NAMESPACE }}
+
+          # Wait for rollback to complete
+          kubectl wait --for=condition=available --timeout=600s \
+            deployment/backend-api \
+            deployment/frontend \
+            deployment/websocket-sync \
+            deployment/notification \
+            --namespace=${{ env.NAMESPACE }}
+
+          echo "✅ Rollback completed"
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Production deployment successful"
+            echo "Version: ${{ github.event.inputs.version }}"
+            echo "Deployed by: ${{ github.actor }}"
+            echo "Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          else
+            echo "❌ Production deployment failed"
+            echo "Version: ${{ github.event.inputs.version }}"
+            echo "Failed at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          fi
+
+      - name: Get deployment info
+        run: |
+          echo "=== Deployment Status ==="
+          kubectl get deployments -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Pod Status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Service Status ==="
+          kubectl get services -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Ingress Status ==="
+          kubectl get ingress -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== HPA Status ==="
+          kubectl get hpa -n ${{ env.NAMESPACE }}
+
+      - name: Create deployment record
+        if: success()
+        run: |
+          echo "Recording deployment..."
+          kubectl annotate deployment backend-api \
+            deployment.kubernetes.io/revision-history="Version: ${{ github.event.inputs.version }}, Deployed by: ${{ github.actor }}, Time: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" \
+            --namespace=${{ env.NAMESPACE }} --overwrite
