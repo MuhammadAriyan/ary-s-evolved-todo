@@ -1,0 +1,154 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    STAGING DEPLOYMENT - QUICK REFERENCE                      ║
+║                         Phase V Event-Driven Cloud                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ CURRENT STATUS                                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ ✅ All deployment scripts created (933 lines)                               │
+│ ✅ All documentation complete (4 guides)                                     │
+│ ✅ Infrastructure ready (Helm, Docker Compose, Dapr)                         │
+│ ⚠️  Docker daemon NOT running - START REQUIRED                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DEPLOY IN 3 STEPS (10 MINUTES)                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│ STEP 1: Start Docker Desktop (1 min)                                        │
+│   • Launch from applications menu                                           │
+│   • Wait for "Docker Desktop is running" in system tray                     │
+│   • Verify: docker ps                                                       │
+│                                                                              │
+│ STEP 2: Deploy Infrastructure (5 min)                                       │
+│   cd /home/ary/Dev/abc/Ary-s-Evolutioned-Todo                              │
+│   ./scripts/deploy-staging-local.sh                                         │
+│                                                                              │
+│ STEP 3: Start Application (2 min)                                           │
+│   Terminal 1: cd backend && uvicorn app.main:app --reload --port 8000      │
+│   Terminal 2: cd frontend && npm run dev                                    │
+│                                                                              │
+│ DONE! Open: http://localhost:3000                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DEPLOYMENT OPTIONS                                                           │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│ Option A: Docker Compose (RECOMMENDED)                                      │
+│   Time: 5-10 minutes | Complexity: Low | Cloud: Not needed                 │
+│   Command: ./scripts/deploy-staging-local.sh                                │
+│   Best for: Quick testing, immediate development                            │
+│                                                                              │
+│ Option B: Minikube (Kubernetes)                                             │
+│   Time: 15-20 minutes | Complexity: Medium | Cloud: Not needed             │
+│   Command: ./scripts/deploy-staging-minikube.sh                             │
+│   Best for: Testing K8s deployment, validating Helm charts                  │
+│                                                                              │
+│ Option C: Oracle OKE (Cloud)                                                │
+│   Time: 30-45 minutes | Complexity: High | Cloud: Required                 │
+│   Guide: PHASE5_DEPLOYMENT_GUIDE.md                                         │
+│   Best for: Production-like staging environment                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SERVICES DEPLOYED                                                            │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Infrastructure:                                                              │
+│   • PostgreSQL         localhost:5432    (Database)                         │
+│   • Redis              localhost:6379    (State Store)                      │
+│   • Redpanda           localhost:19092   (Event Streaming)                  │
+│   • Redpanda Console   localhost:8080    (Web UI)                           │
+│   • Dapr Placement     localhost:50006   (Service Mesh)                     │
+│                                                                              │
+│ Application (start manually):                                               │
+│   • Backend API        localhost:8000    (FastAPI)                          │
+│   • API Docs           localhost:8000/docs                                  │
+│   • Frontend           localhost:3000    (Next.js)                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ VERIFICATION                                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Check deployment health:                                                     │
+│   ./scripts/verify-deployment.sh local                                       │
+│                                                                              │
+│ Test endpoints:                                                              │
+│   curl http://localhost:8000/health                                         │
+│   curl http://localhost:3000                                                │
+│                                                                              │
+│ View logs:                                                                   │
+│   docker compose -f infrastructure/docker-compose.dev.yml logs -f           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ COMMON COMMANDS                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Stop services:                                                               │
+│   docker compose -f infrastructure/docker-compose.dev.yml down              │
+│                                                                              │
+│ Restart service:                                                             │
+│   docker compose -f infrastructure/docker-compose.dev.yml restart postgres  │
+│                                                                              │
+│ View specific logs:                                                          │
+│   docker logs todo-postgres -f                                              │
+│   docker logs todo-redis -f                                                 │
+│   docker logs todo-redpanda -f                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Docker not running:                                                          │
+│   systemctl --user start docker-desktop                                     │
+│                                                                              │
+│ Port already in use:                                                         │
+│   sudo lsof -i :8000                                                        │
+│   sudo kill -9 <PID>                                                        │
+│                                                                              │
+│ Service not responding:                                                      │
+│   docker compose -f infrastructure/docker-compose.dev.yml restart <service> │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DOCUMENTATION                                                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Quick Start (5 min):        QUICK_START_STAGING.md                          │
+│ Full Checklist:             STAGING_DEPLOYMENT_CHECKLIST.md                 │
+│ Scripts Documentation:      scripts/README.md                               │
+│ Deployment Summary:         DEPLOYMENT_SUMMARY.md                           │
+│ Production Guide:           PHASE5_DEPLOYMENT_GUIDE.md                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SCRIPTS CREATED                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ scripts/deploy-staging-local.sh       (181 lines) - Docker Compose deploy   │
+│ scripts/deploy-staging-minikube.sh    (353 lines) - Kubernetes deploy       │
+│ scripts/verify-deployment.sh          (296 lines) - Health verification     │
+│ scripts/start-notification-service.sh  (53 lines) - Notification service    │
+│ scripts/start-recurring-task-service.sh (50 lines) - Recurring task service │
+│                                                                              │
+│ Total: 933 lines of production-ready deployment automation                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ NEXT STEPS                                                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 1. Start Docker Desktop (from applications menu)                            │
+│ 2. Run: ./scripts/deploy-staging-local.sh                                   │
+│ 3. Run: ./scripts/verify-deployment.sh local                                │
+│ 4. Start backend: cd backend && uvicorn app.main:app --reload --port 8000  │
+│ 5. Start frontend: cd frontend && npm run dev                               │
+│ 6. Open: http://localhost:3000                                              │
+│                                                                              │
+│ Total time: 10-15 minutes                                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ Project: Ary's Evolutioned Todo - Phase V Event-Driven Cloud Deployment     ║
+║ Status: ✅ READY TO DEPLOY                                                  ║
+║ Blocker: Docker daemon must be started                                      ║
+║ Generated: 2026-02-01                                                       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
