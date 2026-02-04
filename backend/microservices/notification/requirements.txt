@@ -1,0 +1,30 @@
+# Notification Service Requirements
+# T066: Requirements for Notification Service
+
+# Core dependencies
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-dotenv>=1.0.0
+
+# Dapr
+dapr>=1.12.0
+dapr-ext-fastapi>=1.12.0
+
+# Database
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+
+# Timezone and scheduling
+pytz>=2024.1
+croniter>=2.0.0
+python-dateutil>=2.8.2
+
+# Email notifications
+sendgrid>=6.11.0
+
+# Async support
+asyncio-mqtt>=0.16.0
+aioredis>=2.0.1
+
+# Logging and monitoring
+prometheus-client>=0.19.0
