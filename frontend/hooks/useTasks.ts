@@ -1,12 +1,15 @@
 /**
  * TanStack Query hooks for task operations with optimistic updates
+ * T043: Extended with WebSocket real-time synchronization
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { apiClient } from "@/lib/api-client"
 import { useSession, authClient } from "@/lib/auth-client"
+import { useWebSocket } from "./useWebSocket"
 import type { Task, CreateTaskInput, UpdateTaskInput } from "@/types/task"
+import type { WebSocketMessage } from "@/lib/websocket-client"
 
 const TASKS_QUERY_KEY = ["tasks"]
 
@@ -18,6 +21,7 @@ export function useTasks(filters?: {
 }) {
   const { data: session } = useSession()
   const [tokenReady, setTokenReady] = useState(false)
+  const queryClient = useQueryClient()
 
   // Set JWT token in API client when session changes
   useEffect(() => {
@@ -52,7 +56,55 @@ export function useTasks(filters?: {
     fetchAndSetToken()
   }, [session])
 
-  return useQuery({
+  // T043: Subscribe to WebSocket updates for real-time synchronization
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
+    if (message.type === 'task_update') {
+      const eventType = message.event_type
+      const task = message.task
+
+      console.log(`📡 Real-time update: ${eventType}`, task)
+
+      // Update query cache based on event type
+      queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, (old = []) => {
+        switch (eventType) {
+          case 'task.created':
+            // Add new task if not already present
+            if (!old.find(t => t.id === task.id)) {
+              return [task, ...old]
+            }
+            return old
+
+          case 'task.updated':
+          case 'task.completed':
+          case 'task.uncompleted':
+            // Update existing task
+            return old.map(t => t.id === task.id ? { ...t, ...task } : t)
+
+          case 'task.deleted':
+            // Remove deleted task
+            return old.filter(t => t.id !== task.id)
+
+          default:
+            return old
+        }
+      })
+    } else if (message.type === 'replay_start') {
+      console.log(`📡 Replaying ${message.count} missed events since ${message.since}`)
+    } else if (message.type === 'replay_complete') {
+      console.log(`📡 Replay complete: ${message.count} events`)
+    }
+  }, [queryClient])
+
+  // Connect to WebSocket for real-time updates
+  const { status: wsStatus, isConnected: wsConnected } = useWebSocket({
+    enabled: !!session?.user && tokenReady,
+    onMessage: handleWebSocketMessage,
+    onError: (error) => {
+      console.error('WebSocket error in useTasks:', error)
+    }
+  })
+
+  const query = useQuery({
     queryKey: [...TASKS_QUERY_KEY, filters],
     queryFn: async () => {
       const params = new URLSearchParams()
@@ -67,6 +119,12 @@ export function useTasks(filters?: {
     },
     enabled: !!session?.user && tokenReady, // Only run query if user is authenticated AND token is ready
   })
+
+  return {
+    ...query,
+    wsStatus,
+    wsConnected
+  }
 }
 
 export function useCreateTask() {

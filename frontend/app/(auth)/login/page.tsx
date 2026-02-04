@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { signIn } from "@/lib/auth-client"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { signIn, useSession } from "@/lib/auth-client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,12 +11,32 @@ import { LogIn, Mail, Lock, Chrome } from "lucide-react"
 import Link from "next/link"
 
 export default function LoginPage() {
+  const router = useRouter()
+  const { data: session, isPending } = useSession()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // Auto-redirect if user is already logged in
+  useEffect(() => {
+    if (!isPending && session) {
+      console.log('User already logged in, redirecting to /todo')
+      router.replace("/todo")
+    }
+  }, [session, isPending, router])
+
+  // Periodic session check every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // The useSession hook will automatically refetch
+      console.log('Periodic session check:', { isPending, hasSession: !!session })
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [session, isPending])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

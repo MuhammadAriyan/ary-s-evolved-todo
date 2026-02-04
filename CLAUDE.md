@@ -219,6 +219,7 @@ See `.specify/memory/constitution.md` for code quality, testing, performance, se
 - Neon PostgreSQL (existing, no changes required) (004-sky-aura-glass)
 - Python 3.12+ (backend), TypeScript 5.x (frontend) + FastAPI, OpenAI Agents SDK, Next.js 15, Tailwind CSS (006-chatbot-optimization)
 - PostgreSQL (Neon) - no schema changes required (006-chatbot-optimization)
+- Python 3.12+ (backend microservices), TypeScript 5.x (frontend Next.js 15+) (011-event-driven-microservices)
 
 ## Recent Changes
 - 001-in-memory-todo: Added Python 3.13+ + Python standard library only (no external dependencies)

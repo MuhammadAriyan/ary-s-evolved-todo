@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { SuggestiveSearch } from "@/components/ui/suggestive-search"
+import { ConnectionStatus } from "@/components/ui/connection-status"
 import { List, CalendarDays, Plus, Tag, X } from "lucide-react"
 import "./components/calendar.css"
 
@@ -55,20 +56,47 @@ function TodoPageContent() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list")
   const [searchQuery, setSearchQuery] = useState("")
 
+  // Fetch ALL tasks for tag counts and analytics - only if session exists
+  const { data: allTasks = [], isLoading: allTasksLoading } = useTasks(
+    {},
+    { enabled: !!session && !isPending }
+  )
+
+  // Fetch filtered tasks based on selected tag and completion filter - only if session exists
+  const { data: tasks = [], isLoading, error } = useTasks(
+    {
+      completed: filter === "all" ? undefined : filter === "completed",
+      tag: selectedTag || undefined,
+    },
+    { enabled: !!session && !isPending }
+  )
+
   useEffect(() => {
-    if (!isPending && !session?.user) {
-      router.push("/login")
+    // Add debug logging to understand session state
+    console.log('Session check:', { isPending, session, hasUser: !!session?.user })
+
+    // Only redirect if:
+    // 1. We're done loading (isPending === false)
+    // 2. AND session is explicitly null (not undefined, which means still loading)
+    if (!isPending && session === null) {
+      console.log('Redirecting to login - no session found')
+      // Use replace instead of push to avoid back button issues
+      router.replace("/login")
     }
   }, [session, isPending, router])
 
-  // Fetch ALL tasks for tag counts and analytics
-  const { data: allTasks = [], isLoading: allTasksLoading } = useTasks({})
+  // Periodic session check every 3 seconds to keep authentication fresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('Periodic session check (todo page):', {
+        isPending,
+        hasSession: !!session,
+        sessionUser: session?.user?.email
+      })
+    }, 3000)
 
-  // Fetch filtered tasks based on selected tag and completion filter
-  const { data: tasks = [], isLoading, error } = useTasks({
-    completed: filter === "all" ? undefined : filter === "completed",
-    tag: selectedTag || undefined,
-  })
+    return () => clearInterval(interval)
+  }, [session, isPending])
 
   // Filter tasks by search query
   const filteredTasks = useMemo(() => {
@@ -121,7 +149,25 @@ function TodoPageContent() {
     setSearchQuery(query)
   }
 
-  if (isPending || isLoading || allTasksLoading) {
+  // Show minimal loading state while checking authentication
+  if (isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/50 mx-auto"></div>
+          <p className="text-white/60 text-sm">Checking authentication...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If no session after loading is complete, return null (redirect will happen via useEffect)
+  if (!session) {
+    return null
+  }
+
+  // Show full skeleton loading state while fetching tasks (after session is confirmed)
+  if (isLoading || allTasksLoading) {
     return (
       <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
@@ -146,10 +192,6 @@ function TodoPageContent() {
         </div>
       </div>
     )
-  }
-
-  if (!session?.user) {
-    return null
   }
 
   if (error) {
@@ -185,6 +227,9 @@ function TodoPageContent() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Connection Status Indicator */}
+            <ConnectionStatus showLabel={false} className="px-2 py-1" />
+
             {/* View Toggle */}
             <div className="flex border border-white/10 rounded-lg p-1 bg-black/30 backdrop-blur-sm">
               <Button
