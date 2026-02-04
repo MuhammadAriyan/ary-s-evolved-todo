@@ -1,0 +1,235 @@
+groups:
+  - name: backend_api_alerts
+    interval: 30s
+    rules:
+      # High error rate alert
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="backend-api",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="backend-api"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "High error rate detected in Backend API"
+          description: "Backend API error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # High latency alert
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="backend-api"}[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "High latency detected in Backend API"
+          description: "Backend API p95 latency is {{ $value }}s (threshold: 0.5s)"
+
+      # Service down alert
+      - alert: ServiceDown
+        expr: up{job="backend-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "Backend API service is down"
+          description: "Backend API has been down for more than 2 minutes"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: |
+          (
+            sum(rate(container_cpu_usage_seconds_total{pod=~"backend-api-.*"}[5m]))
+            /
+            sum(container_spec_cpu_quota{pod=~"backend-api-.*"} / container_spec_cpu_period{pod=~"backend-api-.*"})
+          ) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "High CPU usage in Backend API"
+          description: "Backend API CPU usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            sum(container_memory_working_set_bytes{pod=~"backend-api-.*"})
+            /
+            sum(container_spec_memory_limit_bytes{pod=~"backend-api-.*"})
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "High memory usage in Backend API"
+          description: "Backend API memory usage is {{ $value | humanizePercentage }} (threshold: 85%)"
+
+  - name: websocket_sync_alerts
+    interval: 30s
+    rules:
+      # WebSocket connection failures
+      - alert: WebSocketConnectionFailures
+        expr: |
+          rate(websocket_connection_errors_total{job="websocket-sync"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: websocket-sync
+        annotations:
+          summary: "High WebSocket connection failure rate"
+          description: "WebSocket Sync Service is experiencing {{ $value }} connection failures per second"
+
+      # High active connections
+      - alert: HighActiveConnections
+        expr: websocket_active_connections{job="websocket-sync"} > 8000
+        for: 5m
+        labels:
+          severity: warning
+          service: websocket-sync
+        annotations:
+          summary: "High number of active WebSocket connections"
+          description: "WebSocket Sync Service has {{ $value }} active connections (threshold: 8000)"
+
+      # Message delivery lag
+      - alert: MessageDeliveryLag
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(websocket_message_delivery_duration_seconds_bucket{job="websocket-sync"}[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: websocket-sync
+        annotations:
+          summary: "High message delivery lag in WebSocket Sync"
+          description: "WebSocket message delivery p95 latency is {{ $value }}s (threshold: 2s)"
+
+  - name: notification_alerts
+    interval: 30s
+    rules:
+      # Notification delivery failures
+      - alert: NotificationDeliveryFailures
+        expr: |
+          (
+            sum(rate(notification_delivery_total{job="notification",status="failed"}[5m]))
+            /
+            sum(rate(notification_delivery_total{job="notification"}[5m]))
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: notification
+        annotations:
+          summary: "High notification delivery failure rate"
+          description: "Notification Service failure rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+      # Reminder processing lag
+      - alert: ReminderProcessingLag
+        expr: |
+          (time() - reminder_last_processed_timestamp{job="notification"}) > 120
+        for: 5m
+        labels:
+          severity: critical
+          service: notification
+        annotations:
+          summary: "Reminder processing is lagging"
+          description: "Last reminder was processed {{ $value }}s ago (threshold: 120s)"
+
+  - name: database_alerts
+    interval: 30s
+    rules:
+      # High database connection pool usage
+      - alert: HighDatabaseConnectionPoolUsage
+        expr: |
+          (
+            sum(database_connections_active)
+            /
+            sum(database_connections_max)
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High database connection pool usage"
+          description: "Database connection pool usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+      # Slow database queries
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(database_query_duration_seconds_bucket[5m])) by (le)
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Database query p95 latency is {{ $value }}s (threshold: 0.1s)"
+
+  - name: kafka_alerts
+    interval: 30s
+    rules:
+      # Kafka consumer lag
+      - alert: KafkaConsumerLag
+        expr: kafka_consumer_lag > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: kafka
+        annotations:
+          summary: "High Kafka consumer lag"
+          description: "Kafka consumer lag is {{ $value }} messages (threshold: 1000)"
+
+      # Kafka connection failures
+      - alert: KafkaConnectionFailures
+        expr: rate(kafka_connection_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: critical
+          service: kafka
+        annotations:
+          summary: "Kafka connection failures detected"
+          description: "Kafka is experiencing {{ $value }} connection failures per second"
+
+  - name: redis_alerts
+    interval: 30s
+    rules:
+      # High Redis memory usage
+      - alert: HighRedisMemoryUsage
+        expr: |
+          (
+            redis_memory_used_bytes
+            /
+            redis_memory_max_bytes
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }} (threshold: 85%)"
+
+      # Redis connection failures
+      - alert: RedisConnectionFailures
+        expr: rate(redis_connection_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis connection failures detected"
+          description: "Redis is experiencing {{ $value }} connection failures per second"

@@ -1,0 +1,18 @@
+# Dapr Bindings Component Configuration for Local Development
+# Cron scheduling for reminder checks
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  # Cron Schedule - Check for due reminders every minute
+  - name: schedule
+    value: "@every 1m"
+
+  # Direction - Input binding (triggers callback)
+  - name: direction
+    value: "input"

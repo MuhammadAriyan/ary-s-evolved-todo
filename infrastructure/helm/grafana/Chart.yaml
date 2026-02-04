@@ -1,0 +1,17 @@
+apiVersion: v2
+name: grafana
+description: Helm chart for Grafana dashboards
+type: application
+version: 1.0.0
+appVersion: "10.2.0"
+keywords:
+  - grafana
+  - monitoring
+  - dashboards
+maintainers:
+  - name: Todo App Team
+    email: team@example.com
+dependencies:
+  - name: grafana
+    version: "7.0.0"
+    repository: https://grafana.github.io/helm-charts

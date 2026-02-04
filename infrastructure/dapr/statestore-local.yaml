@@ -1,0 +1,55 @@
+# Dapr State Store Component Configuration for Local Development
+# Redis for WebSocket connections, rate limiting, distributed locks, and idempotency
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: redis-state
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  # Redis Connection (Local)
+  - name: redisHost
+    value: "localhost:6379"
+
+  # No password for local development
+  - name: redisPassword
+    value: ""
+
+  # Database Selection
+  - name: redisDB
+    value: "0"
+
+  # Connection Pool
+  - name: maxRetries
+    value: "3"
+
+  - name: maxRetryBackoff
+    value: 2000000000
+
+  - name: enableTLS
+    value: "false"
+
+  # Performance Tuning
+  - name: dialTimeout
+    value: "5s"
+
+  - name: readTimeout
+    value: "3s"
+
+  - name: writeTimeout
+    value: "3s"
+
+  - name: poolSize
+    value: "20"
+
+  - name: minIdleConns
+    value: "5"
+
+  - name: poolTimeout
+    value: "4s"
+
+  # TTL Configuration
+  - name: ttlInSeconds
+    value: "3600"  # Default 1 hour TTL

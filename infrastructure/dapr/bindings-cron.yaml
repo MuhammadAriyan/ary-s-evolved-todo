@@ -1,0 +1,19 @@
+# Dapr Cron Binding for Notification Service
+# T076: Dapr Bindings configuration for periodic reminder checks
+#
+# This binding triggers the Notification Service every minute to check for due reminders.
+# The service endpoint /cron will be called via HTTP POST by Dapr.
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+  namespace: default
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  - name: schedule
+    value: "@every 1m"  # Check for reminders every minute
+  - name: direction
+    value: "input"  # Input binding (Dapr calls our service)

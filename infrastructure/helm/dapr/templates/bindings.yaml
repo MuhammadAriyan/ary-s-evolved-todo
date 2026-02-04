@@ -1,0 +1,15 @@
+{{- if .Values.components.bindings.enabled }}
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ .Values.components.bindings.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: {{ .Values.components.bindings.type }}
+  version: {{ .Values.components.bindings.version }}
+  metadata:
+    - name: schedule
+      value: {{ .Values.components.bindings.metadata.schedule | quote }}
+    - name: direction
+      value: {{ .Values.components.bindings.metadata.direction | quote }}
+{{- end }}

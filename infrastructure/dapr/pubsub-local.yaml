@@ -1,0 +1,53 @@
+# Dapr Pub/Sub Component Configuration for Local Development
+# Kafka-compatible event streaming with Redpanda
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  # Broker Configuration (Local Redpanda)
+  - name: brokers
+    value: "localhost:19092"
+
+  # Consumer Group Configuration
+  - name: consumerGroup
+    value: "todo-app"
+
+  - name: clientID
+    value: "dapr-todo-app"
+
+  # Authentication (Disabled for local development)
+  - name: authRequired
+    value: "false"
+
+  # Message Configuration
+  - name: maxMessageBytes
+    value: "1048576"  # 1MB max message size
+
+  - name: consumeRetryInterval
+    value: "200ms"
+
+  # Performance Tuning
+  - name: heartbeatInterval
+    value: "5s"
+
+  - name: sessionTimeout
+    value: "15s"
+
+  # TLS Configuration (Disabled for local)
+  - name: disableTls
+    value: "true"
+
+  # Advanced Settings
+  - name: consumerFetchMin
+    value: "1"
+
+  - name: consumerFetchDefault
+    value: "2097152"  # 2MB
+
+  - name: channelBufferSize
+    value: "512"

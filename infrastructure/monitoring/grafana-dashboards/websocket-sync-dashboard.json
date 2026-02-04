@@ -1,0 +1,97 @@
+{
+  "dashboard": {
+    "title": "WebSocket Sync Service Metrics",
+    "tags": ["websocket", "realtime", "microservices"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Active WebSocket Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "websocket_active_connections{job=\"websocket-sync\"}",
+            "legendFormat": "Active Connections"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Connection Rate (connects/disconnects)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(websocket_connections_total{job=\"websocket-sync\",event=\"connect\"}[5m])",
+            "legendFormat": "Connects/sec"
+          },
+          {
+            "expr": "rate(websocket_connections_total{job=\"websocket-sync\",event=\"disconnect\"}[5m])",
+            "legendFormat": "Disconnects/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Message Throughput",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(websocket_messages_sent_total{job=\"websocket-sync\"}[5m])",
+            "legendFormat": "Messages Sent/sec"
+          },
+          {
+            "expr": "rate(websocket_messages_received_total{job=\"websocket-sync\"}[5m])",
+            "legendFormat": "Messages Received/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Message Delivery Latency (p50, p95, p99)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(websocket_message_delivery_duration_seconds_bucket{job=\"websocket-sync\"}[5m])) by (le))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(websocket_message_delivery_duration_seconds_bucket{job=\"websocket-sync\"}[5m])) by (le))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(websocket_message_delivery_duration_seconds_bucket{job=\"websocket-sync\"}[5m])) by (le))",
+            "legendFormat": "p99"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Connection Errors",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(websocket_connection_errors_total{job=\"websocket-sync\"}[5m])",
+            "legendFormat": "Errors/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Redis State Store Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(redis_operations_total{service=\"websocket-sync\"}[5m])",
+            "legendFormat": "{{operation}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      }
+    ]
+  }
+}

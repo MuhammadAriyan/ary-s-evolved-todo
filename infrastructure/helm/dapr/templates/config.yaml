@@ -1,0 +1,22 @@
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: dapr-config
+  namespace: {{ .Release.Namespace }}
+spec:
+  {{- if .Values.config.tracing.enabled }}
+  tracing:
+    samplingRate: {{ .Values.config.tracing.samplingRate | quote }}
+    zipkin:
+      endpointAddress: {{ .Values.config.tracing.zipkin.endpointAddress | quote }}
+  {{- end }}
+  {{- if .Values.config.metric.enabled }}
+  metric:
+    enabled: true
+  {{- end }}
+  {{- if .Values.config.mtls.enabled }}
+  mtls:
+    enabled: true
+    workloadCertTTL: {{ .Values.config.mtls.workloadCertTTL | quote }}
+    allowedClockSkew: {{ .Values.config.mtls.allowedClockSkew | quote }}
+  {{- end }}

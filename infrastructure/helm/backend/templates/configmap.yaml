@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "backend-api.fullname" . }}-config
+  labels:
+    {{- include "backend-api.labels" . | nindent 4 }}
+data:
+  app-config.yaml: |
+    environment: {{ .Values.env | toYaml | nindent 4 }}

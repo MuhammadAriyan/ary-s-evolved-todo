@@ -1,0 +1,25 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub-redpanda
+  namespace: default
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: "redpanda-0.redpanda.redpanda.svc.cluster.local:9092"
+    - name: authType
+      value: "password"
+    - name: saslUsername
+      secretKeyRef:
+        name: backend-secrets
+        key: kafka-username
+    - name: saslPassword
+      secretKeyRef:
+        name: backend-secrets
+        key: kafka-password
+    - name: maxMessageBytes
+      value: "1048576"
+    - name: consumerGroup
+      value: "todo-app"
