@@ -1,0 +1,138 @@
+# Dapr Pub/Sub Component Configuration for Redpanda Cloud
+# Kafka-compatible event streaming with at-least-once delivery
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+  namespace: default
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  # Broker Configuration
+  - name: brokers
+    value: "redpanda-cloud-broker.example.com:9092"
+
+  # Consumer Group Configuration
+  - name: consumerGroup
+    value: "{namespace}"  # Dynamic namespace-based consumer groups
+
+  - name: consumerID
+    value: "{podName}"  # Unique consumer ID per pod
+
+  - name: clientID
+    value: "dapr-{appId}"  # Client ID for tracing
+
+  # Authentication (SASL)
+  - name: authType
+    value: "password"
+
+  - name: saslUsername
+    value: "redpanda-user"
+
+  - name: saslPassword
+    secretKeyRef:
+      name: kafka-secrets
+      key: saslPassword
+
+  - name: saslMechanism
+    value: "SCRAM-SHA-256"
+
+  # Message Configuration
+  - name: maxMessageBytes
+    value: "1048576"  # 1MB max message size
+
+  - name: consumeRetryInterval
+    value: "200ms"
+
+  # Performance Tuning
+  - name: heartbeatInterval
+    value: "5s"
+
+  - name: sessionTimeout
+    value: "15s"
+
+  - name: version
+    value: "2.8.0"  # Kafka protocol version
+
+  # TLS Configuration (Production)
+  - name: disableTls
+    value: "false"  # Enable TLS in production
+
+  - name: caCert
+    secretKeyRef:
+      name: kafka-tls-secrets
+      key: ca.crt
+
+  # Advanced Settings
+  - name: consumerFetchMin
+    value: "1"
+
+  - name: consumerFetchDefault
+    value: "2097152"  # 2MB
+
+  - name: channelBufferSize
+    value: "512"
+
+  # Schema Registry (Optional - for Avro serialization)
+  # - name: schemaRegistryURL
+  #   value: "http://schema-registry:8081"
+
+  # - name: schemaRegistryAPIKey
+  #   secretKeyRef:
+  #     name: schema-registry-secrets
+  #     key: apiKey
+
+  # - name: schemaRegistryAPISecret
+  #   secretKeyRef:
+  #     name: schema-registry-secrets
+  #     key: apiSecret
+
+  # - name: schemaCachingEnabled
+  #   value: "true"
+
+  # - name: schemaLatestVersionCacheTTL
+  #   value: "5m"
+
+---
+# Resiliency Policy for Pub/Sub
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: kafka-pubsub-resiliency
+  namespace: default
+spec:
+  policies:
+    retries:
+      pubsubRetry:
+        policy: exponential
+        duration: 5s
+        maxInterval: 5m
+        maxRetries: 10
+
+    circuitBreakers:
+      pubsubCircuitBreaker:
+        maxRequests: 5
+        timeout: 60s
+        trip: consecutiveFailures > 5
+
+  targets:
+    components:
+      kafka-pubsub:
+        inbound:
+          retry: pubsubRetry
+          circuitBreaker: pubsubCircuitBreaker
+        outbound:
+          retry: pubsubRetry
+          circuitBreaker: pubsubCircuitBreaker
+
+---
+# Dead Letter Topic Configuration
+# Note: Configure dead letter topics in application code using Dapr SDK
+# Example (Python):
+# sub = client.Subscribe(
+#     pubsub_name="kafka-pubsub",
+#     topic="task-events",
+#     dead_letter_topic="dead-letter-queue"
+# )

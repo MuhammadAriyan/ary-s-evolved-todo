@@ -1,0 +1,1126 @@
+# REST API Specification for Phase V Event-Driven Architecture
+# OpenAPI 3.0 specification for new endpoints
+
+openapi: 3.0.3
+info:
+  title: Ary's Evolved Todo - Phase V API
+  description: |
+    Event-driven task management API with real-time sync, collaboration, and advanced features.
+
+    **New Features in Phase V:**
+    - Real-time task synchronization via WebSocket
+    - Scheduled reminders with exact times
+    - Recurring tasks with cron expressions
+    - Full-text search with fuzzy matching
+    - Collaboration (friends, groups, permissions)
+    - Task assignments and comments
+    - Direct messaging between friends
+    - Complete audit trail
+  version: 5.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: http://localhost:8000/v1
+    description: Local development server
+
+tags:
+  - name: Search
+    description: Full-text search operations
+  - name: Friends
+    description: Friend management
+  - name: Groups
+    description: Collaboration group management
+  - name: Comments
+    description: Task comment operations
+  - name: Messages
+    description: Direct messaging
+  - name: Reminders
+    description: Scheduled reminder management
+  - name: Audit
+    description: Audit log access
+
+paths:
+  # Search Endpoints
+  /search/tasks:
+    get:
+      tags: [Search]
+      summary: Search tasks with full-text search
+      description: |
+        Search tasks using PostgreSQL full-text search with relevance ranking.
+        Supports fuzzy matching, partial word matching, and multi-column search.
+      operationId: searchTasks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query text
+          schema:
+            type: string
+            example: "urgent meeting"
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: status
+          in: query
+          description: Filter by task status
+          schema:
+            type: string
+            enum: [pending, in_progress, completed]
+        - name: priority
+          in: query
+          description: Filter by priority
+          schema:
+            type: string
+            enum: [low, medium, high]
+        - name: tags
+          in: query
+          description: Filter by tags (comma-separated)
+          schema:
+            type: string
+            example: "urgent,work"
+      responses:
+        '200':
+          description: Search results with relevance scores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaskSearchResult'
+                  total:
+                    type: integer
+                  query:
+                    type: string
+                  execution_time_ms:
+                    type: number
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Friend Endpoints
+  /friends:
+    get:
+      tags: [Friends]
+      summary: List all friends
+      operationId: listFriends
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by friendship status
+          schema:
+            type: string
+            enum: [pending, accepted, blocked]
+            default: accepted
+      responses:
+        '200':
+          description: List of friends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Friend'
+
+    post:
+      tags: [Friends]
+      summary: Send friend request
+      operationId: sendFriendRequest
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: string
+                  description: User ID to send friend request to
+      responses:
+        '201':
+          description: Friend request sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendConnection'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Friend request already exists
+
+  /friends/{friend_id}:
+    delete:
+      tags: [Friends]
+      summary: Remove friend or reject friend request
+      operationId: removeFriend
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: friend_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Friend removed successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /friends/{friend_id}/accept:
+    post:
+      tags: [Friends]
+      summary: Accept friend request
+      operationId: acceptFriendRequest
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: friend_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Friend request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendConnection'
+
+  # Group Endpoints
+  /groups:
+    get:
+      tags: [Groups]
+      summary: List all groups user is member of
+      operationId: listGroups
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+
+    post:
+      tags: [Groups]
+      summary: Create new collaboration group
+      operationId: createGroup
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+
+  /groups/{group_id}:
+    get:
+      tags: [Groups]
+      summary: Get group details
+      operationId: getGroup
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetail'
+
+    patch:
+      tags: [Groups]
+      summary: Update group (owner/admin only)
+      operationId: updateGroup
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Group updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+
+    delete:
+      tags: [Groups]
+      summary: Delete group (owner only)
+      operationId: deleteGroup
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Group deleted
+
+  /groups/{group_id}/members:
+    get:
+      tags: [Groups]
+      summary: List group members
+      operationId: listGroupMembers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of group members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupMember'
+
+    post:
+      tags: [Groups]
+      summary: Add member to group (admin only)
+      operationId: addGroupMember
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: string
+                role:
+                  type: string
+                  enum: [member, admin]
+                  default: member
+                permissions:
+                  $ref: '#/components/schemas/GroupPermissions'
+      responses:
+        '201':
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMember'
+
+  /groups/{group_id}/members/{user_id}:
+    patch:
+      tags: [Groups]
+      summary: Update member permissions (admin only)
+      operationId: updateGroupMember
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum: [member, admin]
+                permissions:
+                  $ref: '#/components/schemas/GroupPermissions'
+      responses:
+        '200':
+          description: Member updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMember'
+
+    delete:
+      tags: [Groups]
+      summary: Remove member from group (admin only)
+      operationId: removeGroupMember
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Member removed
+
+  # Comment Endpoints
+  /tasks/{task_id}/comments:
+    get:
+      tags: [Comments]
+      summary: List task comments
+      operationId: listTaskComments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskComment'
+
+    post:
+      tags: [Comments]
+      summary: Add comment to task
+      operationId: createTaskComment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  description: Comment text (supports @mentions)
+                  example: "Hey @user-123, can you review this?"
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskComment'
+
+  /tasks/{task_id}/comments/{comment_id}:
+    patch:
+      tags: [Comments]
+      summary: Update comment (author only)
+      operationId: updateTaskComment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: comment_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+      responses:
+        '200':
+          description: Comment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskComment'
+
+    delete:
+      tags: [Comments]
+      summary: Delete comment (author or admin only)
+      operationId: deleteTaskComment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: comment_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Comment deleted
+
+  # Direct Message Endpoints
+  /messages:
+    get:
+      tags: [Messages]
+      summary: List conversations
+      operationId: listConversations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of conversations with last message
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+
+  /messages/{friend_id}:
+    get:
+      tags: [Messages]
+      summary: Get messages with friend
+      operationId: getMessages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: friend_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: before
+          in: query
+          description: Get messages before this message ID (pagination)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DirectMessage'
+
+    post:
+      tags: [Messages]
+      summary: Send direct message to friend
+      operationId: sendMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: friend_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  maxLength: 2000
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectMessage'
+
+  /messages/{message_id}/read:
+    post:
+      tags: [Messages]
+      summary: Mark message as read
+      operationId: markMessageRead
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: message_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Message marked as read
+
+  # Reminder Endpoints
+  /tasks/{task_id}/reminders:
+    get:
+      tags: [Reminders]
+      summary: List task reminders
+      operationId: listTaskReminders
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of reminders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reminder'
+
+    post:
+      tags: [Reminders]
+      summary: Schedule reminder for task
+      operationId: createReminder
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reminder_time]
+              properties:
+                reminder_time:
+                  type: string
+                  format: date-time
+                  description: Exact time for reminder (ISO 8601)
+                cron_expression:
+                  type: string
+                  description: Cron expression for recurring reminders
+                  example: "0 9 * * 1-5"
+                timezone:
+                  type: string
+                  default: "UTC"
+                  example: "America/New_York"
+                notification_channels:
+                  type: array
+                  items:
+                    type: string
+                    enum: [in_app, email, push]
+                  default: [in_app]
+      responses:
+        '201':
+          description: Reminder scheduled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reminder'
+
+  /reminders/{reminder_id}:
+    delete:
+      tags: [Reminders]
+      summary: Cancel reminder
+      operationId: cancelReminder
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: reminder_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Reminder cancelled
+
+  # Audit Log Endpoints
+  /audit/tasks/{task_id}:
+    get:
+      tags: [Audit]
+      summary: Get audit log for task
+      operationId: getTaskAuditLog
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLogEntry'
+
+  /audit/export:
+    post:
+      tags: [Audit]
+      summary: Export audit logs (admin only)
+      operationId: exportAuditLogs
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [start_date, end_date, format]
+              properties:
+                start_date:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+                format:
+                  type: string
+                  enum: [json, csv]
+                user_id:
+                  type: string
+                  description: Filter by user (optional)
+      responses:
+        '200':
+          description: Audit log export
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Better Auth
+
+  schemas:
+    TaskSearchResult:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/Task'
+        rank:
+          type: number
+          description: Relevance score (0-1)
+        highlighted_title:
+          type: string
+          description: Title with search terms highlighted
+        highlighted_description:
+          type: string
+          description: Description with search terms highlighted
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        due_date:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        recurring_pattern:
+          type: object
+          nullable: true
+        group_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Friend:
+      type: object
+      properties:
+        user_id:
+          type: string
+        username:
+          type: string
+        status:
+          type: string
+          enum: [online, offline, away, busy]
+        last_seen:
+          type: string
+          format: date-time
+        connected_at:
+          type: string
+          format: date-time
+
+    FriendConnection:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id_1:
+          type: string
+        user_id_2:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, blocked, rejected]
+        requested_by:
+          type: string
+        connected_at:
+          type: string
+          format: date-time
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        owner_user_id:
+          type: string
+        member_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    GroupDetail:
+      allOf:
+        - $ref: '#/components/schemas/Group'
+        - type: object
+          properties:
+            members:
+              type: array
+              items:
+                $ref: '#/components/schemas/GroupMember'
+
+    GroupMember:
+      type: object
+      properties:
+        user_id:
+          type: string
+        username:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, member]
+        permissions:
+          $ref: '#/components/schemas/GroupPermissions'
+        joined_at:
+          type: string
+          format: date-time
+
+    GroupPermissions:
+      type: object
+      properties:
+        add_tasks:
+          type: boolean
+        edit_tasks:
+          type: boolean
+        delete_tasks:
+          type: boolean
+        comment:
+          type: boolean
+        assign:
+          type: boolean
+
+    TaskComment:
+      type: object
+      properties:
+        id:
+          type: string
+        task_id:
+          type: string
+        user_id:
+          type: string
+        username:
+          type: string
+        content:
+          type: string
+        mentioned_users:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DirectMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        from_user_id:
+          type: string
+        to_user_id:
+          type: string
+        content:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Conversation:
+      type: object
+      properties:
+        friend_id:
+          type: string
+        friend_username:
+          type: string
+        last_message:
+          $ref: '#/components/schemas/DirectMessage'
+        unread_count:
+          type: integer
+
+    Reminder:
+      type: object
+      properties:
+        id:
+          type: string
+        task_id:
+          type: string
+        user_id:
+          type: string
+        reminder_time:
+          type: string
+          format: date-time
+        cron_expression:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+        notification_channels:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [pending, triggered, cancelled, expired]
+        created_at:
+          type: string
+          format: date-time
+
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        event_id:
+          type: string
+        event_type:
+          type: string
+        task_id:
+          type: string
+        user_id:
+          type: string
+        operation:
+          type: string
+        before_state:
+          type: object
+        after_state:
+          type: object
+        ip_address:
+          type: string
+        user_agent:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              details:
+                type: object
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Invalid or missing JWT token"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Resource not found"
