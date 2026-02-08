@@ -1,51 +1,105 @@
-'use client'
-
-import { Inter } from "next/font/google"
+import type { Metadata } from 'next'
+import localFont from "next/font/local"
 import "./globals.css"
 import { PageWrapper } from "@/components/layout/PageWrapper"
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState } from 'react'
+import { QueryProvider } from "@/components/providers/QueryProvider"
+import { WebVitals } from "@/components/analytics/WebVitals"
 
-// Optimize font loading with next/font
-const inter = Inter({
-  subsets: ['latin'],
+// Self-hosted fonts with next/font/local for optimal performance
+const inter = localFont({
+  src: [
+    {
+      path: '../public/fonts/inter-400.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/inter-500.ttf',
+      weight: '500',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/inter-600.ttf',
+      weight: '600',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/inter-700.ttf',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
   display: 'swap',
   variable: '--font-inter',
 })
+
+const chelseaMarket = localFont({
+  src: '../public/fonts/chelsea-market.ttf',
+  weight: '400',
+  display: 'swap',
+  variable: '--font-chelsea',
+})
+
+// SEO Metadata (T043-T046)
+export const metadata: Metadata = {
+  title: {
+    template: '%s | Ary\'s Evolved Todo',
+    default: 'Ary\'s Evolved Todo - AI-Powered Task Management',
+  },
+  description: 'Intelligent task management with AI chat assistant. Organize, prioritize, and complete your tasks with natural language commands and smart automation.',
+  keywords: ['todo', 'task management', 'AI assistant', 'productivity', 'chat interface', 'task automation', 'smart todo'],
+  authors: [{ name: 'Ary' }],
+  creator: 'Ary',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://ary-evolved-todo.vercel.app',
+    title: 'Ary\'s Evolved Todo - AI-Powered Task Management',
+    description: 'Intelligent task management with AI chat assistant. Organize, prioritize, and complete your tasks with natural language commands.',
+    siteName: 'Ary\'s Evolved Todo',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Ary\'s Evolved Todo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Ary\'s Evolved Todo - AI-Powered Task Management',
+    description: 'Intelligent task management with AI chat assistant. Organize, prioritize, and complete your tasks with natural language commands.',
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Create QueryClient instance with session caching configuration
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh
-        gcTime: 10 * 60 * 1000, // 10 minutes - cache garbage collection
-        refetchOnWindowFocus: false, // Don't refetch on window focus
-        retry: 1, // Retry failed queries once
-      },
-    },
-  }))
-
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} ${chelseaMarket.variable}`}>
       <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Ary's Evolved Todo</title>
-        <meta name="description" content="AI-powered todo application with chat interface" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Chelsea+Market&display=swap" rel="stylesheet" />
       </head>
       <body className={`${inter.className} antialiased`}>
-        <QueryClientProvider client={queryClient}>
+        <WebVitals />
+        <QueryProvider>
           <PageWrapper>{children}</PageWrapper>
-        </QueryClientProvider>
+        </QueryProvider>
       </body>
     </html>
   )

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dapr-config
+  namespace: dapr-system
+data:
+  config.yaml: |
+    apiVersion: dapr.io/v1alpha1
+    kind: Configuration
+    metadata:
+      name: dapr-config
+    spec:
+      tracing:
+        samplingRate: "1"
+        zipkin:
+          endpointAddress: "http://zipkin.dapr-system.svc.cluster.local:9411/api/v2/spans"
+      metric:
+        enabled: true
+      mtls:
+        enabled: true
+        workloadCertTTL: "24h"
+        allowedClockSkew: "15m"

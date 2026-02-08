@@ -115,15 +115,15 @@ export function MessageThread({ messages, isLoading, isInitialLoad, streaming, c
   if (messages.length === 0 && !isLoading && !streaming?.isStreaming) {
     return (
       <div className={cn('flex-1 flex items-center justify-center', className)}>
-        <div className="text-center text-white/50 max-w-md px-4">
+        <div className="text-center text-text-muted max-w-md px-4">
           <div className="text-4xl mb-4">🤖</div>
-          <h3 className="text-lg font-medium text-white/70 mb-2 font-chelsea">
+          <h3 className="text-lg font-medium text-text-tertiary mb-2 font-chelsea">
             Hello! I'm Aren, your AI task assistant.
           </h3>
           <p className="text-sm font-chelsea">
             I can help you manage your tasks through conversation. Try saying:
           </p>
-          <ul className="mt-4 space-y-2 text-sm text-white/60 font-chelsea">
+          <ul className="mt-4 space-y-2 text-sm text-text-muted font-chelsea">
             <li>"Add task buy groceries"</li>
             <li>"Show my pending tasks"</li>
             <li>"Complete task 1"</li>
@@ -148,13 +148,13 @@ export function MessageThread({ messages, isLoading, isInitialLoad, streaming, c
           </div>
           <div className="flex-1 min-w-0">
             {streaming.agentName && (
-              <div className="text-xs text-white/50 mb-1 font-medium font-chelsea">
+              <div className="text-xs text-text-muted mb-1 font-medium font-chelsea">
                 {streaming.agentName}
               </div>
             )}
             <div className="text-white/90 prose prose-invert prose-sm max-w-none font-chelsea">
               {streaming.content || (
-                <span className="text-white/50">Thinking...</span>
+                <span className="text-text-muted">Thinking...</span>
               )}
               {/* Typing cursor */}
               <span className="inline-block w-2 h-4 bg-white/70 ml-0.5 animate-pulse" />
@@ -183,7 +183,7 @@ export function MessageThread({ messages, isLoading, isInitialLoad, streaming, c
             <div className="w-4 h-4 border-2 border-white/30 border-t-white/70 rounded-full animate-spin" />
           </div>
           <div className="flex items-center">
-            <span className="text-white/50 text-sm font-chelsea">Thinking...</span>
+            <span className="text-text-muted text-sm font-chelsea">Thinking...</span>
           </div>
         </div>
       )}

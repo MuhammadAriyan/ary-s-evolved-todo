@@ -43,7 +43,7 @@ export function ErrorModal({ isOpen, title = 'Error', message, onClose, onRetry 
         </h2>
 
         {/* Message */}
-        <p className="text-white/80 mb-6">
+        <p className="text-text-secondary mb-6">
           {message}
         </p>
 

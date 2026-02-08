@@ -1,0 +1,17 @@
+apiVersion: v2
+name: dapr
+description: Helm chart for Dapr runtime with custom components
+type: application
+version: 1.0.0
+appVersion: "1.12.0"
+keywords:
+  - dapr
+  - runtime
+  - microservices
+maintainers:
+  - name: Todo App Team
+    email: team@example.com
+dependencies:
+  - name: dapr
+    version: "1.12.0"
+    repository: https://dapr.github.io/helm-charts/

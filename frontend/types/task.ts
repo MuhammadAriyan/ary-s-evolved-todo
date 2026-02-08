@@ -6,6 +6,15 @@ export type Priority = "High" | "Medium" | "Low"
 
 export type Recurring = "daily" | "weekly" | "monthly" | null
 
+export interface RecurringPattern {
+  type: 'preset' | 'custom'
+  preset?: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  customCron?: string
+  timezone?: string
+  endDate?: string
+  maxOccurrences?: number
+}
+
 export interface Task {
   id: number
   user_id: string
@@ -16,6 +25,9 @@ export interface Task {
   tags: string[]
   due_date?: string
   recurring?: Recurring
+  recurring_pattern?: RecurringPattern
+  parent_task_id?: number
+  recurrence_count?: number
   created_at: string
   updated_at: string
 }
@@ -27,6 +39,7 @@ export interface CreateTaskInput {
   tags?: string[]
   due_date?: string
   recurring?: Recurring
+  recurring_pattern?: RecurringPattern
 }
 
 export interface UpdateTaskInput {
@@ -36,5 +49,6 @@ export interface UpdateTaskInput {
   tags?: string[]
   due_date?: string
   recurring?: Recurring
+  recurring_pattern?: RecurringPattern
   completed?: boolean
 }

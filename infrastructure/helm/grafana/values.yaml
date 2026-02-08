@@ -1,0 +1,135 @@
+# Grafana Configuration
+grafana:
+  replicas: 2
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: "oci-bv"
+
+  adminUser: admin
+  adminPassword: changeme  # Change this in production!
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - grafana.todo.example.com
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.todo.example.com
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus-server.monitoring.svc.cluster.local
+          access: proxy
+          isDefault: true
+          editable: true
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+  dashboards:
+    default:
+      backend-api:
+        json: |
+          {
+            "dashboard": {
+              "title": "Backend API Metrics",
+              "tags": ["backend", "api", "microservices"],
+              "timezone": "browser",
+              "panels": [
+                {
+                  "id": 1,
+                  "title": "Request Rate",
+                  "type": "graph",
+                  "targets": [
+                    {
+                      "expr": "sum(rate(http_requests_total{job=\"backend-api\"}[5m])) by (method, status)",
+                      "legendFormat": "{{method}} - {{status}}"
+                    }
+                  ],
+                  "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+                }
+              ]
+            }
+          }
+
+      websocket-sync:
+        json: |
+          {
+            "dashboard": {
+              "title": "WebSocket Sync Service Metrics",
+              "tags": ["websocket", "realtime", "microservices"],
+              "timezone": "browser",
+              "panels": [
+                {
+                  "id": 1,
+                  "title": "Active WebSocket Connections",
+                  "type": "graph",
+                  "targets": [
+                    {
+                      "expr": "websocket_active_connections{job=\"websocket-sync\"}",
+                      "legendFormat": "Active Connections"
+                    }
+                  ],
+                  "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+                }
+              ]
+            }
+          }
+
+      notification:
+        json: |
+          {
+            "dashboard": {
+              "title": "Notification Service Metrics",
+              "tags": ["notification", "reminders", "microservices"],
+              "timezone": "browser",
+              "panels": [
+                {
+                  "id": 1,
+                  "title": "Notification Delivery Rate",
+                  "type": "graph",
+                  "targets": [
+                    {
+                      "expr": "sum(rate(notification_delivery_total{job=\"notification\"}[5m])) by (channel, status)",
+                      "legendFormat": "{{channel}} - {{status}}"
+                    }
+                  ],
+                  "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+                }
+              ]
+            }
+          }
+
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+    datasources:
+      enabled: true
+      label: grafana_datasource

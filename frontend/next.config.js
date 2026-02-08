@@ -32,7 +32,7 @@ const nextConfig = {
 
   // Experimental features for better performance
   experimental: {
-    optimizePackageImports: ['framer-motion', '@tanstack/react-query', 'recharts'],
+    optimizePackageImports: ['framer-motion', '@tanstack/react-query', 'recharts', 'lucide-react'],
   },
 
   // Exclude large ML packages from server components (they're only used client-side)

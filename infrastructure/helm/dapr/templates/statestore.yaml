@@ -1,0 +1,23 @@
+{{- if .Values.components.statestore.enabled }}
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ .Values.components.statestore.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: {{ .Values.components.statestore.type }}
+  version: {{ .Values.components.statestore.version }}
+  metadata:
+    - name: redisHost
+      value: {{ .Values.components.statestore.metadata.redisHost | quote }}
+    - name: redisPassword
+      secretKeyRef:
+        name: backend-secrets
+        key: redis-password
+    - name: enableTLS
+      value: {{ .Values.components.statestore.metadata.enableTLS | quote }}
+    - name: maxRetries
+      value: {{ .Values.components.statestore.metadata.maxRetries | quote }}
+    - name: maxRetryBackoff
+      value: {{ .Values.components.statestore.metadata.maxRetryBackoff | quote }}
+{{- end }}

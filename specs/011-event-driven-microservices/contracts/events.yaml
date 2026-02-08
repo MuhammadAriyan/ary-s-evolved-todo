@@ -1,0 +1,419 @@
+# Event Schemas for Phase V Event-Driven Architecture
+# Kafka Topics with Redpanda Cloud + Dapr Pub/Sub
+
+version: "1.0"
+description: "Event schemas for task management event-driven microservices"
+
+topics:
+  task-events:
+    description: "All task lifecycle events (create, update, delete, complete, archive)"
+    partition_key: "task_id"
+    retention: "7 days"
+    consumers:
+      - audit-service
+      - recurring-task-service
+    events:
+      - task.created
+      - task.updated
+      - task.deleted
+      - task.completed
+      - task.archived
+
+  task-updates:
+    description: "Real-time sync events for WebSocket broadcasting"
+    partition_key: "user_id"
+    retention: "1 hour"
+    consumers:
+      - websocket-sync-service
+    events:
+      - task.updated
+      - task.created
+      - task.deleted
+
+  reminders:
+    description: "Scheduled reminder triggers"
+    partition_key: "user_id"
+    retention: "24 hours"
+    consumers:
+      - notification-service
+    events:
+      - reminder.scheduled
+      - reminder.triggered
+      - reminder.cancelled
+
+  collaboration-events:
+    description: "Comments, assignments, mentions"
+    partition_key: "group_id"
+    retention: "3 days"
+    consumers:
+      - websocket-sync-service
+      - notification-service
+    events:
+      - task.comment.created
+      - task.comment.updated
+      - task.comment.deleted
+      - task.assigned
+      - task.unassigned
+
+  friend-activity:
+    description: "Friend status changes and direct messages"
+    partition_key: "user_id"
+    retention: "1 day"
+    consumers:
+      - websocket-sync-service
+    events:
+      - friend.status.changed
+      - friend.message.sent
+
+  search-index-updates:
+    description: "Search index refresh triggers"
+    partition_key: "task_id"
+    retention: "1 hour"
+    consumers:
+      - search-indexer-service
+    events:
+      - search.index.update
+
+  dead-letter-queue:
+    description: "Failed event processing for manual review"
+    partition_key: "original_topic"
+    retention: "30 days"
+    consumers:
+      - manual-review
+    events:
+      - event.failed
+
+# Event Schemas
+
+schemas:
+  task.created:
+    description: "Published when a new task is created"
+    schema:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - timestamp
+        - task_id
+        - user_id
+      properties:
+        schema_version:
+          type: string
+          example: "v1"
+        event_type:
+          type: string
+          const: "task.created"
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        task_id:
+          type: string
+        user_id:
+          type: string
+        group_id:
+          type: string
+          nullable: true
+        task_data:
+          type: object
+          properties:
+            title:
+              type: string
+            description:
+              type: string
+            status:
+              type: string
+              enum: [pending, in_progress, completed]
+            priority:
+              type: string
+              enum: [low, medium, high]
+            due_date:
+              type: string
+              format: date-time
+              nullable: true
+            tags:
+              type: array
+              items:
+                type: string
+            recurring_pattern:
+              type: object
+              nullable: true
+        metadata:
+          type: object
+
+  task.updated:
+    description: "Published when a task is updated"
+    schema:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - timestamp
+        - task_id
+        - user_id
+        - before_state
+        - after_state
+      properties:
+        schema_version:
+          type: string
+          example: "v1"
+        event_type:
+          type: string
+          const: "task.updated"
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        task_id:
+          type: string
+        user_id:
+          type: string
+        operation:
+          type: string
+          example: "update"
+        before_state:
+          type: object
+        after_state:
+          type: object
+        change_summary:
+          type: object
+          properties:
+            fields_changed:
+              type: array
+              items:
+                type: string
+            changed_by:
+              type: string
+        metadata:
+          type: object
+
+  task.completed:
+    description: "Published when a task is marked as completed"
+    schema:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - timestamp
+        - task_id
+        - user_id
+      properties:
+        schema_version:
+          type: string
+          example: "v1"
+        event_type:
+          type: string
+          const: "task.completed"
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        task_id:
+          type: string
+        user_id:
+          type: string
+        completed_at:
+          type: string
+          format: date-time
+        recurring_pattern:
+          type: object
+          nullable: true
+          properties:
+            type:
+              type: string
+              enum: [cron, interval]
+            expression:
+              type: string
+            timezone:
+              type: string
+            end_date:
+              type: string
+              format: date-time
+              nullable: true
+        metadata:
+          type: object
+
+  reminder.scheduled:
+    description: "Published when a reminder is scheduled"
+    schema:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - timestamp
+        - task_id
+        - user_id
+        - reminder_time
+      properties:
+        schema_version:
+          type: string
+          example: "v1"
+        event_type:
+          type: string
+          const: "reminder.scheduled"
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        task_id:
+          type: string
+        user_id:
+          type: string
+        reminder_time:
+          type: string
+          format: date-time
+        notification_channels:
+          type: array
+          items:
+            type: string
+            enum: [in_app, email, push]
+        cron_expression:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+          default: "UTC"
+        metadata:
+          type: object
+          properties:
+            task_title:
+              type: string
+            task_priority:
+              type: string
+
+  task.comment.created:
+    description: "Published when a comment is added to a task"
+    schema:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - timestamp
+        - task_id
+        - comment_id
+        - user_id
+        - content
+      properties:
+        schema_version:
+          type: string
+          example: "v1"
+        event_type:
+          type: string
+          const: "task.comment.created"
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        task_id:
+          type: string
+        comment_id:
+          type: string
+        user_id:
+          type: string
+        group_id:
+          type: string
+          nullable: true
+        content:
+          type: string
+        mentioned_users:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+
+  friend.status.changed:
+    description: "Published when a friend's online status changes"
+    schema:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - timestamp
+        - user_id
+        - status
+      properties:
+        schema_version:
+          type: string
+          example: "v1"
+        event_type:
+          type: string
+          const: "friend.status.changed"
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        user_id:
+          type: string
+        status:
+          type: string
+          enum: [online, offline, away, busy]
+        metadata:
+          type: object
+          properties:
+            last_seen:
+              type: string
+              format: date-time
+            activity:
+              type: string
+
+  search.index.update:
+    description: "Published when task content changes requiring search index update"
+    schema:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - timestamp
+        - task_id
+        - indexable_content
+      properties:
+        schema_version:
+          type: string
+          example: "v1"
+        event_type:
+          type: string
+          const: "search.index.update"
+        event_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        task_id:
+          type: string
+        indexable_content:
+          type: object
+          properties:
+            title:
+              type: string
+            description:
+              type: string
+            tags:
+              type: array
+              items:
+                type: string
+
+# Dapr Pub/Sub Metadata
+dapr:
+  component_name: "kafka-pubsub"
+  component_type: "pubsub.kafka"
+  metadata:
+    brokers: "redpanda-cloud-broker.example.com:9092"
+    authType: "password"
+    saslMechanism: "SCRAM-SHA-256"
+    consumerGroup: "{namespace}"
+    maxMessageBytes: "1048576"
+    version: "2.8.0"

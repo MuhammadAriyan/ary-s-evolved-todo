@@ -1,0 +1,81 @@
+{
+  "dashboard": {
+    "title": "Notification Service Metrics",
+    "tags": ["notification", "reminders", "microservices"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Notification Delivery Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(notification_delivery_total{job=\"notification\"}[5m])) by (channel, status)",
+            "legendFormat": "{{channel}} - {{status}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Notification Delivery Success Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(notification_delivery_total{job=\"notification\",status=\"success\"}[5m])) / sum(rate(notification_delivery_total{job=\"notification\"}[5m]))",
+            "legendFormat": "Success Rate"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Reminder Processing Lag",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "time() - reminder_last_processed_timestamp{job=\"notification\"}",
+            "legendFormat": "Processing Lag (seconds)"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Pending Reminders",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "reminder_queue_size{job=\"notification\"}",
+            "legendFormat": "Pending Reminders"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Notification Delivery Latency by Channel",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(notification_delivery_duration_seconds_bucket{job=\"notification\"}[5m])) by (le, channel))",
+            "legendFormat": "{{channel}} p95"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Email Delivery Errors",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(notification_delivery_total{job=\"notification\",channel=\"email\",status=\"failed\"}[5m])",
+            "legendFormat": "Email Errors/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      }
+    ]
+  }
+}

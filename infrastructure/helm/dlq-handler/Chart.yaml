@@ -1,0 +1,13 @@
+apiVersion: v2
+name: dlq-handler
+description: A Helm chart for the Dead Letter Queue Handler Service
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - dlq
+  - error-handling
+  - microservice
+maintainers:
+  - name: Todo App Team
+    email: team@example.com

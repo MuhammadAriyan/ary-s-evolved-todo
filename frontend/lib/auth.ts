@@ -23,18 +23,29 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24, // 24 hours
-    updateAge: 60 * 60, // 1 hour
+    expiresIn: 60 * 60 * 24 * 7, // 7 days (increased from 24 hours)
+    updateAge: 60 * 60 * 24, // 1 day
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 5, // 5 minutes
+    },
   },
   secret: process.env.BETTER_AUTH_SECRET!,
   baseURL: process.env.BETTER_AUTH_URL!,
   trustedOrigins: [process.env.BETTER_AUTH_URL!],
+  advanced: {
+    cookiePrefix: "better-auth",
+    useSecureCookies: false, // Set to true in production with HTTPS
+    crossSubDomainCookies: {
+      enabled: false,
+    },
+  },
   plugins: [
     jwt({
       // Use the same secret as backend for JWT token generation
       // @ts-expect-error - secret is valid but types may be outdated
       secret: process.env.JWT_SECRET_KEY!,
-      expiresIn: 60 * 60 * 24, // 24 hours (matches backend)
+      expiresIn: 60 * 60 * 24 * 7, // 7 days (matches session)
     }),
   ],
 })

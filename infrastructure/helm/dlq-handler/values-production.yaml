@@ -1,0 +1,48 @@
+# Production environment values for dlq-handler
+replicaCount: 2
+
+image:
+  repository: ghcr.io/your-org/todo-dlq-handler
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+podAnnotations:
+  dapr.io/enabled: "true"
+  dapr.io/app-id: "dlq-handler"
+  dapr.io/app-port: "8004"
+  dapr.io/log-level: "info"
+  dapr.io/enable-metrics: "true"
+  dapr.io/metrics-port: "9090"
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+env:
+  - name: ENVIRONMENT
+    value: "production"
+  - name: LOG_LEVEL
+    value: "info"
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: database-secret-production
+        key: url
+  - name: MAX_RETRY_ATTEMPTS
+    value: "5"
+  - name: SENTRY_DSN
+    valueFrom:
+      secretKeyRef:
+        name: monitoring-secrets
+        key: sentry-dsn

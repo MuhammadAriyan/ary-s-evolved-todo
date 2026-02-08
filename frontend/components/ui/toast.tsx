@@ -51,7 +51,7 @@ export function Toast({ id, title, description, variant = 'default', duration = 
             {title}
           </div>
         )}
-        <div className="text-sm text-white/80">
+        <div className="text-sm text-text-secondary">
           {description}
         </div>
       </div>

@@ -1,0 +1,137 @@
+# Dapr State Store Component Configuration for Redis
+# Used for WebSocket connection management, rate limiting, distributed locks, and idempotency
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: redis-state
+  namespace: default
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  # Redis Connection
+  - name: redisHost
+    value: "redis-master.default.svc.cluster.local:6379"
+
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-secrets
+      key: password
+
+  # Database Selection
+  - name: redisDB
+    value: "0"
+
+  # Connection Pool
+  - name: maxRetries
+    value: "3"
+
+  - name: maxRetryBackoff
+    value: "2s"
+
+  - name: enableTLS
+    value: "false"  # Set to true in production
+
+  # Performance Tuning
+  - name: dialTimeout
+    value: "5s"
+
+  - name: readTimeout
+    value: "3s"
+
+  - name: writeTimeout
+    value: "3s"
+
+  - name: poolSize
+    value: "20"
+
+  - name: minIdleConns
+    value: "5"
+
+  - name: poolTimeout
+    value: "4s"
+
+  # TTL Configuration
+  - name: ttlInSeconds
+    value: "3600"  # Default 1 hour TTL
+
+  # Failover Configuration (Redis Sentinel)
+  # - name: sentinelMasterName
+  #   value: "mymaster"
+
+  # - name: sentinels
+  #   value: "sentinel1:26379,sentinel2:26379,sentinel3:26379"
+
+---
+# State Store Usage Patterns
+
+# 1. WebSocket Connection Management
+# Key: ws:user:{user_id}
+# Value: Set of connection IDs
+# TTL: 1 hour
+# Example:
+#   await dapr_client.save_state(
+#       store_name="redis-state",
+#       key=f"ws:user:{user_id}",
+#       value=["conn-123", "conn-456"],
+#       state_options={"ttl": 3600}
+#   )
+
+# 2. Event Idempotency Tracking
+# Key: processed:{event_id}
+# Value: "true"
+# TTL: 7 days (604800 seconds)
+# Example:
+#   await dapr_client.save_state(
+#       store_name="redis-state",
+#       key=f"processed:{event_id}",
+#       value="true",
+#       state_options={"ttl": 604800}
+#   )
+
+# 3. Rate Limiting
+# Key: ratelimit:{user_id}:{endpoint}
+# Value: Request count
+# TTL: 60 seconds (sliding window)
+# Example:
+#   count = await dapr_client.get_state(
+#       store_name="redis-state",
+#       key=f"ratelimit:{user_id}:create_task"
+#   )
+
+# 4. Distributed Locks
+# Key: lock:{resource_id}
+# Value: Lock owner ID
+# TTL: 30 seconds
+# Example:
+#   await dapr_client.try_lock(
+#       store_name="redis-state",
+#       resource_id=f"task:{task_id}",
+#       lock_owner="service-instance-123",
+#       expiry_in_seconds=30
+#   )
+
+# 5. Scheduled Reminder State
+# Key: reminder:{task_id}:{reminder_time}
+# Value: Reminder metadata
+# TTL: 24 hours
+# Example:
+#   await dapr_client.save_state(
+#       store_name="redis-state",
+#       key=f"reminder:{task_id}:{reminder_time}",
+#       value={"status": "scheduled", "channels": ["email", "in_app"]},
+#       state_options={"ttl": 86400}
+#   )
+
+# 6. Session Management
+# Key: session:{session_id}
+# Value: Session data (user_id, JWT, metadata)
+# TTL: 1 hour
+# Example:
+#   await dapr_client.save_state(
+#       store_name="redis-state",
+#       key=f"session:{session_id}",
+#       value={"user_id": "user-123", "jwt": "...", "created_at": "..."},
+#       state_options={"ttl": 3600}
+#   )

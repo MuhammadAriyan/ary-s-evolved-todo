@@ -1,0 +1,32 @@
+# T040: Requirements for WebSocket Sync Service
+
+# FastAPI and WebSocket support
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+websockets>=12.0
+python-multipart>=0.0.6
+
+# Dapr SDK for Pub/Sub and State Store
+dapr>=1.12.0
+dapr-ext-fastapi>=1.12.0
+
+# JWT authentication
+pyjwt>=2.8.0
+cryptography>=41.0.0
+
+# Async support
+asyncio>=3.4.3
+aioredis>=2.0.1
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Logging and monitoring
+prometheus-client>=0.19.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0

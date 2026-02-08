@@ -1,0 +1,69 @@
+# Dapr Runtime Configuration
+# This chart installs Dapr runtime with custom components
+
+# Dapr configuration
+dapr:
+  global:
+    ha:
+      enabled: true
+      replicaCount: 3
+    mtls:
+      enabled: true
+    prometheus:
+      enabled: true
+      port: 9090
+
+# Custom Dapr components
+components:
+  pubsub:
+    enabled: true
+    name: pubsub-redpanda
+    type: pubsub.kafka
+    version: v1
+    metadata:
+      brokers: "redpanda-0.redpanda.redpanda.svc.cluster.local:9092"
+      authType: "password"
+      maxMessageBytes: "1048576"
+      consumerGroup: "todo-app"
+
+  statestore:
+    enabled: true
+    name: statestore-redis
+    type: state.redis
+    version: v1
+    metadata:
+      redisHost: "redis-master.redis.svc.cluster.local:6379"
+      enableTLS: "false"
+      maxRetries: "3"
+      maxRetryBackoff: "2000"
+
+  bindings:
+    enabled: true
+    name: cron-reminder-check
+    type: bindings.cron
+    version: v1
+    metadata:
+      schedule: "*/1 * * * *"
+      direction: "input"
+
+  secrets:
+    enabled: true
+    name: kubernetes-secrets
+    type: secretstores.kubernetes
+    version: v1
+
+# Configuration
+config:
+  tracing:
+    enabled: true
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: "http://zipkin.dapr-system.svc.cluster.local:9411/api/v2/spans"
+
+  metric:
+    enabled: true
+
+  mtls:
+    enabled: true
+    workloadCertTTL: "24h"
+    allowedClockSkew: "15m"

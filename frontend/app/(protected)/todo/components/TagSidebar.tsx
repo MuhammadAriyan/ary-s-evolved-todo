@@ -58,7 +58,7 @@ export function TagSidebar({ tasks, selectedTag, onTagSelect }: TagSidebarProps)
                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-all ${
                   selectedTag === tag
                     ? "bg-sky-cyan-500/20 text-sky-cyan-400 border border-sky-cyan-500/30"
-                    : "text-white/70 hover:bg-white/10 hover:text-white border border-transparent"
+                    : "text-text-tertiary hover:bg-white/10 hover:text-white border border-transparent"
                 }`}
               >
                 <span className="truncate">{tag}</span>

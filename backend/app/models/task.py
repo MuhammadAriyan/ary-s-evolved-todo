@@ -1,7 +1,7 @@
 """Task model for todo items."""
 from sqlmodel import SQLModel, Field, Column
-from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy import String
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TSVECTOR
+from sqlalchemy import String, Text
 from datetime import datetime, date
 from typing import Optional, List
 
@@ -22,3 +22,10 @@ class Task(SQLModel, table=True):
     recurring: Optional[str] = Field(default=None, max_length=20)  # daily, weekly, monthly
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Phase V: Event-Driven Microservices Extensions
+    search_vector: Optional[str] = Field(default=None, sa_column=Column(TSVECTOR, nullable=True))
+    recurring_pattern: Optional[dict] = Field(default=None, sa_column=Column(JSONB))
+    parent_task_id: Optional[int] = Field(default=None, foreign_key="tasks.id")
+    recurrence_count: int = Field(default=0)
+    group_id: Optional[str] = Field(default=None)  # FK removed temporarily until collaboration_groups table is created

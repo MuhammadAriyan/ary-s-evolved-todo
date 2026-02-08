@@ -5,12 +5,15 @@ from sqlalchemy import cast, text
 from sqlalchemy.dialects.postgresql import ARRAY, TEXT
 from typing import List, Optional
 from datetime import datetime
+import logging
 
 from app.api.deps import SessionDep, CurrentUser
 from app.models.task import Task
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse
+from app.services.event_publisher import get_event_publisher
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=List[TaskResponse])
@@ -69,6 +72,34 @@ async def create_task(
     session.commit()
     session.refresh(task)
 
+    # T031: Publish task.created event
+    try:
+        event_publisher = get_event_publisher()
+        task_dict = {
+            "id": task.id,
+            "user_id": task.user_id,
+            "title": task.title,
+            "description": task.description,
+            "completed": task.completed,
+            "priority": task.priority,
+            "tags": task.tags,
+            "due_date": task.due_date.isoformat() if task.due_date else None,
+            "recurring": task.recurring,
+            "created_at": task.created_at.isoformat(),
+            "updated_at": task.updated_at.isoformat(),
+        }
+        await event_publisher.publish_task_event(
+            event_type="task.created",
+            task_id=str(task.id),
+            user_id=current_user,
+            task_data=task_dict,
+            after_state=task_dict
+        )
+        logger.info(f"Published task.created event for task {task.id}")
+    except Exception as e:
+        logger.error(f"Failed to publish task.created event: {str(e)}")
+        # Don't fail the request if event publishing fails
+
     return task
 
 
@@ -106,6 +137,21 @@ async def update_task(
             detail="Task not found"
         )
 
+    # T031: Capture before state for event
+    before_state = {
+        "id": task.id,
+        "user_id": task.user_id,
+        "title": task.title,
+        "description": task.description,
+        "completed": task.completed,
+        "priority": task.priority,
+        "tags": task.tags,
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "recurring": task.recurring,
+        "created_at": task.created_at.isoformat(),
+        "updated_at": task.updated_at.isoformat(),
+    }
+
     # Update only provided fields
     update_data = task_data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -116,6 +162,34 @@ async def update_task(
     session.add(task)
     session.commit()
     session.refresh(task)
+
+    # T031: Publish task.updated event
+    try:
+        event_publisher = get_event_publisher()
+        after_state = {
+            "id": task.id,
+            "user_id": task.user_id,
+            "title": task.title,
+            "description": task.description,
+            "completed": task.completed,
+            "priority": task.priority,
+            "tags": task.tags,
+            "due_date": task.due_date.isoformat() if task.due_date else None,
+            "recurring": task.recurring,
+            "created_at": task.created_at.isoformat(),
+            "updated_at": task.updated_at.isoformat(),
+        }
+        await event_publisher.publish_task_event(
+            event_type="task.updated",
+            task_id=str(task.id),
+            user_id=current_user,
+            task_data=after_state,
+            before_state=before_state,
+            after_state=after_state
+        )
+        logger.info(f"Published task.updated event for task {task.id}")
+    except Exception as e:
+        logger.error(f"Failed to publish task.updated event: {str(e)}")
 
     return task
 
@@ -135,12 +209,43 @@ async def toggle_complete(
             detail="Task not found"
         )
 
+    # T031: Capture before state
+    before_completed = task.completed
+
     task.completed = not task.completed
     task.updated_at = datetime.utcnow()
 
     session.add(task)
     session.commit()
     session.refresh(task)
+
+    # T031: Publish task.completed event
+    try:
+        event_publisher = get_event_publisher()
+        task_dict = {
+            "id": task.id,
+            "user_id": task.user_id,
+            "title": task.title,
+            "description": task.description,
+            "completed": task.completed,
+            "priority": task.priority,
+            "tags": task.tags,
+            "due_date": task.due_date.isoformat() if task.due_date else None,
+            "recurring": task.recurring,
+            "created_at": task.created_at.isoformat(),
+            "updated_at": task.updated_at.isoformat(),
+        }
+        event_type = "task.completed" if task.completed else "task.uncompleted"
+        await event_publisher.publish_task_event(
+            event_type=event_type,
+            task_id=str(task.id),
+            user_id=current_user,
+            task_data=task_dict,
+            after_state=task_dict
+        )
+        logger.info(f"Published {event_type} event for task {task.id}")
+    except Exception as e:
+        logger.error(f"Failed to publish task completion event: {str(e)}")
 
     return task
 
@@ -160,7 +265,36 @@ async def delete_task(
             detail="Task not found"
         )
 
+    # T031: Capture task data before deletion
+    task_dict = {
+        "id": task.id,
+        "user_id": task.user_id,
+        "title": task.title,
+        "description": task.description,
+        "completed": task.completed,
+        "priority": task.priority,
+        "tags": task.tags,
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "recurring": task.recurring,
+        "created_at": task.created_at.isoformat(),
+        "updated_at": task.updated_at.isoformat(),
+    }
+
     session.delete(task)
     session.commit()
+
+    # T031: Publish task.deleted event
+    try:
+        event_publisher = get_event_publisher()
+        await event_publisher.publish_task_event(
+            event_type="task.deleted",
+            task_id=str(task_id),
+            user_id=current_user,
+            task_data=task_dict,
+            before_state=task_dict
+        )
+        logger.info(f"Published task.deleted event for task {task_id}")
+    except Exception as e:
+        logger.error(f"Failed to publish task.deleted event: {str(e)}")
 
     return None

@@ -1,0 +1,27 @@
+{{- if .Values.components.pubsub.enabled }}
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ .Values.components.pubsub.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: {{ .Values.components.pubsub.type }}
+  version: {{ .Values.components.pubsub.version }}
+  metadata:
+    - name: brokers
+      value: {{ .Values.components.pubsub.metadata.brokers | quote }}
+    - name: authType
+      value: {{ .Values.components.pubsub.metadata.authType | quote }}
+    - name: saslUsername
+      secretKeyRef:
+        name: backend-secrets
+        key: kafka-username
+    - name: saslPassword
+      secretKeyRef:
+        name: backend-secrets
+        key: kafka-password
+    - name: maxMessageBytes
+      value: {{ .Values.components.pubsub.metadata.maxMessageBytes | quote }}
+    - name: consumerGroup
+      value: {{ .Values.components.pubsub.metadata.consumerGroup | quote }}
+{{- end }}

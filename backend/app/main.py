@@ -6,6 +6,8 @@ from app.config import settings
 from app.api.v1.router import router as api_v1_router
 from app.services.scheduler import start_scheduler, shutdown_scheduler
 from app.services.ai.config import initialize_ai_client, is_ai_configured
+from app.services.event_publisher import get_event_publisher
+from app.services.dapr_state import get_dapr_state_store
 import logging
 import time
 
@@ -31,6 +33,21 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("AI client not configured (AI_API_KEY not set)")
 
+    # Initialize Dapr components (Phase V)
+    try:
+        # Initialize EventPublisher (Dapr Pub/Sub)
+        event_publisher = get_event_publisher()
+        logger.info("Dapr EventPublisher initialized successfully")
+
+        # Initialize DaprStateStore (Redis)
+        state_store = get_dapr_state_store()
+        logger.info("Dapr StateStore initialized successfully")
+
+        logger.info("Phase V: Event-driven microservices components initialized")
+    except Exception as e:
+        logger.warning(f"Dapr components initialization failed: {e}")
+        logger.warning("Application will continue without event-driven features")
+
     yield
     # Shutdown
     logger.info("Shutting down application...")
@@ -38,12 +55,93 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Todo API",
-    description="Full-stack todo application API with JWT authentication",
-    version="1.0.0",
+    title="Evolved Todo API",
+    description="""
+    ## Event-Driven Task Management API
+
+    A production-ready, event-driven task management system with real-time synchronization,
+    intelligent reminders, and comprehensive audit trails.
+
+    ### Features
+
+    * **Real-Time Sync**: WebSocket-based real-time task synchronization across devices
+    * **Smart Reminders**: Precise time-based notifications with timezone support
+    * **Recurring Tasks**: Advanced cron-based recurring task patterns
+    * **Full-Text Search**: PostgreSQL-powered search with fuzzy matching
+    * **Audit Trail**: Complete change history for all task operations
+    * **Event-Driven**: Kafka-based event streaming for microservices
+    * **Cloud-Native**: Deployed on Oracle OKE with Dapr runtime
+
+    ### Authentication
+
+    All endpoints (except health checks) require JWT authentication via Better Auth.
+    Include the JWT token in the `Authorization` header:
+
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+
+    ### Rate Limiting
+
+    API requests are rate-limited per user:
+    - Default: 100 requests per minute
+    - Search: 30 requests per minute
+    - Auth: 10 requests per minute
+
+    Rate limit headers are included in responses:
+    - `X-RateLimit-Limit`: Maximum requests per window
+    - `X-RateLimit-Remaining`: Remaining requests
+    - `X-RateLimit-Reset`: Seconds until reset
+
+    ### Distributed Tracing
+
+    All requests include correlation IDs for distributed tracing:
+    - Request header: `X-Correlation-ID`
+    - Response header: `X-Correlation-ID`
+
+    ### Support
+
+    For issues and questions, visit our [GitHub repository](https://github.com/your-org/evolved-todo).
+    """,
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
+    contact={
+        "name": "Evolved Todo Team",
+        "url": "https://github.com/your-org/evolved-todo",
+        "email": "support@evolved-todo.com"
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT"
+    },
+    openapi_tags=[
+        {
+            "name": "tasks",
+            "description": "Task CRUD operations and management"
+        },
+        {
+            "name": "reminders",
+            "description": "Task reminder scheduling and notifications"
+        },
+        {
+            "name": "search",
+            "description": "Full-text search with fuzzy matching"
+        },
+        {
+            "name": "audit",
+            "description": "Audit trail and change history"
+        },
+        {
+            "name": "health",
+            "description": "Health checks and service status"
+        },
+        {
+            "name": "metrics",
+            "description": "Prometheus metrics and monitoring"
+        }
+    ]
 )
 
 # Request logging middleware
@@ -86,8 +184,15 @@ app.add_middleware(
 # Include API routers
 app.include_router(api_v1_router)
 
-@app.get("/health")
-async def health_check():
+# Include Phase V API routers
+from app.api.health import router as health_router
+from app.api.metrics import router as metrics_router
+
+app.include_router(health_router, tags=["health"])
+app.include_router(metrics_router, tags=["metrics"])
+
+@app.get("/health/basic")
+async def basic_health_check():
     """
     Basic liveness check endpoint.
     Returns immediately without checking dependencies.
@@ -95,7 +200,7 @@ async def health_check():
     """
     return {"status": "healthy"}
 
-@app.get("/health/ready")
+@app.get("/health/legacy")
 async def readiness_check():
     """
     Readiness check endpoint.

@@ -1,0 +1,144 @@
+# Dapr Bindings Component Configuration for Cron Scheduling
+# Used for precise time-based reminders via Dapr Jobs API
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+  namespace: default
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  # Cron Schedule - Check for due reminders every minute
+  - name: schedule
+    value: "@every 1m"
+
+  # Direction - Input binding (triggers callback)
+  - name: direction
+    value: "input"
+
+---
+# Usage Pattern for Notification Service
+
+# The Notification Service subscribes to this cron binding to check for due reminders.
+# Every minute, Dapr triggers the callback endpoint with the current time.
+
+# Python Example (FastAPI + Dapr SDK):
+#
+# from dapr.ext.fastapi import DaprApp
+# from fastapi import FastAPI
+#
+# app = FastAPI()
+# dapr_app = DaprApp(app)
+#
+# @dapr_app.binding('reminder-cron')
+# async def check_reminders(request):
+#     """Called every minute by Dapr cron binding"""
+#     current_time = datetime.utcnow()
+#
+#     # Query scheduled_reminders table for due reminders
+#     due_reminders = await get_due_reminders(current_time)
+#
+#     for reminder in due_reminders:
+#         # Check idempotency (Redis state store)
+#         key = f"reminder:{reminder.task_id}:{reminder.reminder_time}"
+#         already_sent = await dapr_client.get_state("redis-state", key)
+#
+#         if not already_sent:
+#             # Send notification via channels
+#             await send_notification(reminder)
+#
+#             # Mark as sent (TTL: 24 hours)
+#             await dapr_client.save_state(
+#                 "redis-state",
+#                 key,
+#                 "sent",
+#                 state_options={"ttl": 86400}
+#             )
+#
+#             # Update reminder status in database
+#             await update_reminder_status(reminder.id, "triggered")
+#
+#     return {"status": "ok", "processed": len(due_reminders)}
+
+---
+# Alternative: Dynamic Cron Scheduling with Dapr Jobs API (Dapr 1.14+)
+
+# For more precise scheduling (exact times instead of polling), use Dapr Jobs API:
+#
+# from dapr.clients import DaprClient
+#
+# async def schedule_reminder(task_id: str, user_id: str, reminder_time: datetime):
+#     """Schedule a one-time reminder using Dapr Jobs API"""
+#
+#     job_name = f"reminder-{task_id}-{reminder_time.isoformat()}"
+#
+#     async with DaprClient() as client:
+#         await client.schedule_job(
+#             name=job_name,
+#             schedule=reminder_time.isoformat(),  # ISO 8601 timestamp
+#             data={
+#                 "task_id": task_id,
+#                 "user_id": user_id,
+#                 "reminder_time": reminder_time.isoformat()
+#             },
+#             ttl="24h"  # Job expires after 24 hours
+#         )
+
+---
+# Recurring Reminders with Cron Expressions
+
+# For recurring reminders, use cron expressions:
+#
+# async def schedule_recurring_reminder(
+#     task_id: str,
+#     user_id: str,
+#     cron_expression: str,
+#     timezone: str = "UTC"
+# ):
+#     """Schedule a recurring reminder using cron expression"""
+#
+#     job_name = f"recurring-reminder-{task_id}"
+#
+#     async with DaprClient() as client:
+#         await client.schedule_job(
+#             name=job_name,
+#             schedule=f"@cron {cron_expression}",
+#             data={
+#                 "task_id": task_id,
+#                 "user_id": user_id,
+#                 "cron_expression": cron_expression,
+#                 "timezone": timezone
+#             },
+#             repeats=0  # Infinite repeats
+#         )
+
+---
+# Cron Expression Examples
+
+# Daily at 9 AM:           0 9 * * *
+# Weekdays at 9 AM:        0 9 * * 1-5
+# Every hour:              0 * * * *
+# Every 15 minutes:        */15 * * * *
+# First day of month:      0 0 1 * *
+# Last day of month:       0 0 L * *
+# Every Monday at 2 PM:    0 14 * * 1
+
+---
+# Performance Considerations
+
+# 1. Polling Interval: 1 minute is a good balance between accuracy and load
+# 2. Batch Processing: Process multiple due reminders in a single callback
+# 3. Idempotency: Always check Redis state store before sending notifications
+# 4. Time Window: Consider reminders due within next 2 minutes (buffer for processing)
+# 5. Timezone Handling: Store all times in UTC, convert at delivery
+
+---
+# Monitoring and Alerting
+
+# Track these metrics:
+# - Reminder processing latency (target: <10 seconds)
+# - Missed reminders (target: 0)
+# - Duplicate notifications (target: 0)
+# - Cron callback failures (alert if >5 in 5 minutes)
