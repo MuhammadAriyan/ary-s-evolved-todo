@@ -1,0 +1,14 @@
+apiVersion: v2
+name: audit
+description: A Helm chart for Audit microservice
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - audit
+  - microservice
+  - dapr
+  - event-driven
+maintainers:
+  - name: Ary
+    email: ary@example.com

@@ -44,3 +44,4 @@ htmlcov/
 # UV
 .uv/
 uv.lock
+docker-desktop-amd64.deb

@@ -110,7 +110,7 @@ export function ReminderList({ taskId }: ReminderListProps) {
                   <Badge
                     key={channel}
                     variant="outline"
-                    className="bg-white/5 border-white/20 text-white/80 text-xs"
+                    className="bg-white/5 border-white/20 text-text-secondary text-xs"
                   >
                     <span className="mr-1">{getChannelIcon(channel)}</span>
                     {channel.replace("_", " ")}

@@ -1,10 +1,17 @@
-"""Search results page with highlighting and filters."""
+// Search results page with highlighting and filters
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, Filter, Clock, Tag, AlertCircle } from 'lucide-react';
-import SearchBar from '@/components/search/SearchBar';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Dynamic import for SearchBar to reduce initial bundle size (T055)
+const SearchBar = dynamic(() => import('@/components/search/SearchBar'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-10 w-full bg-white/10" />,
+});
 
 interface Task {
   id: number;

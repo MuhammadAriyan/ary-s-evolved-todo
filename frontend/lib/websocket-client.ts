@@ -8,6 +8,8 @@
  * - Connection state tracking
  */
 
+import { devLog } from '@/lib/utils'
+
 export type WebSocketStatus = 'connecting' | 'connected' | 'disconnecting' | 'disconnected' | 'reconnecting' | 'error'
 
 export interface WebSocketMessage {
@@ -68,12 +70,12 @@ export class WebSocketClient {
    */
   connect(): void {
     if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
-      console.log('WebSocket already connected or connecting')
+      devLog('WebSocket already connected or connecting')
       return
     }
 
     this.setStatus('connecting')
-    console.log('Connecting to WebSocket:', this.url)
+    devLog('Connecting to WebSocket:', this.url)
 
     try {
       // Construct WebSocket URL with token as query parameter
@@ -94,7 +96,7 @@ export class WebSocketClient {
    * Disconnect from WebSocket server
    */
   disconnect(): void {
-    console.log('Disconnecting WebSocket')
+    devLog('Disconnecting WebSocket')
     this.shouldReconnect = false
     this.stopHeartbeat()
     this.stopReconnect()
@@ -176,7 +178,7 @@ export class WebSocketClient {
   // Private methods
 
   private handleOpen(): void {
-    console.log('WebSocket connected')
+    devLog('WebSocket connected')
     this.setStatus('connected')
     this.reconnectAttempts = 0
     this.startHeartbeat()
@@ -211,7 +213,7 @@ export class WebSocketClient {
   }
 
   private handleClose(event: CloseEvent): void {
-    console.log('WebSocket closed:', event.code, event.reason)
+    devLog('WebSocket closed:', event.code, event.reason)
     this.stopHeartbeat()
     this.ws = null
 
@@ -231,7 +233,7 @@ export class WebSocketClient {
       this.maxReconnectInterval
     )
 
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1})`)
+    devLog(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1})`)
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectAttempts++
@@ -269,7 +271,7 @@ export class WebSocketClient {
   private setStatus(status: WebSocketStatus): void {
     if (this.status !== status) {
       this.status = status
-      console.log('WebSocket status changed:', status)
+      devLog('WebSocket status changed:', status)
       this.statusHandlers.forEach(handler => {
         try {
           handler(status)

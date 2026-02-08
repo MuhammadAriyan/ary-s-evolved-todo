@@ -379,10 +379,302 @@ docker exec -it todo-redis redis-cli GET "ws:user:user-1"
 - [Next.js Documentation](https://nextjs.org/docs)
 - [SQLModel Documentation](https://sqlmodel.tiangolo.com/)
 
+## Kubernetes Deployment (Production)
+
+### Prerequisites for Kubernetes Deployment
+
+- **kubectl** (v1.28+): Kubernetes command-line tool
+- **Helm** (v3.13+): Kubernetes package manager
+- **Docker** (v24+): Container runtime
+- **Dapr CLI** (v1.12+): Dapr command-line tool
+
+### Installation
+
+```bash
+# Install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Install Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Verify installations
+kubectl version --client
+helm version
+```
+
+### Quick Start - Kubernetes Deployment
+
+#### 1. Deploy Dapr Runtime
+
+```bash
+cd infrastructure/scripts
+./deploy-dapr.sh
+```
+
+#### 2. Create Kubernetes Secrets
+
+```bash
+# Database credentials
+kubectl create secret generic database-secret-production \
+  --from-literal=url="postgresql://user:password@host:5432/dbname" \
+  -n todo-app-production
+
+# Search service credentials
+kubectl create secret generic search-secret-production \
+  --from-literal=elasticsearch-url="http://elasticsearch:9200" \
+  -n todo-app-production
+
+# Monitoring credentials
+kubectl create secret generic monitoring-secrets \
+  --from-literal=sentry-dsn="https://your-sentry-dsn" \
+  -n todo-app-production
+```
+
+#### 3. Deploy All Microservices
+
+```bash
+cd infrastructure/scripts
+./deploy-microservices.sh production
+```
+
+#### 4. Verify Deployment
+
+```bash
+./health-check.sh todo-app-production
+```
+
+### Deployment Scripts
+
+#### Deploy Microservices
+
+```bash
+# Deploy to staging
+./scripts/deploy-microservices.sh staging
+
+# Deploy to production
+./scripts/deploy-microservices.sh production
+
+# Deploy specific service
+helm upgrade --install audit helm/audit \
+  --namespace todo-app-production \
+  --create-namespace \
+  -f helm/audit/values-production.yaml
+```
+
+#### Rollback Deployments
+
+```bash
+# Rollback specific service to previous version
+./scripts/rollback-microservices.sh audit
+
+# Rollback to specific revision
+./scripts/rollback-microservices.sh audit 3
+
+# View rollback history
+helm history audit -n todo-app-production
+```
+
+#### Health Checks
+
+```bash
+# Run comprehensive health checks
+./scripts/health-check.sh todo-app-production
+
+# Check specific deployment
+kubectl rollout status deployment/audit -n todo-app-production
+
+# View pod status
+kubectl get pods -n todo-app-production
+```
+
+### Helm Charts
+
+Each microservice has a complete Helm chart:
+
+- **audit**: Audit logging service
+- **search-indexer**: Search indexing service
+- **dlq-handler**: Dead Letter Queue handler
+- **recurring-task**: Recurring task processor
+
+#### Chart Structure
+
+```
+helm/<service>/
+├── Chart.yaml                 # Chart metadata
+├── values.yaml                # Default values
+├── values-staging.yaml        # Staging overrides
+├── values-production.yaml     # Production overrides
+└── templates/
+    ├── deployment.yaml        # Deployment config
+    ├── service.yaml           # Service config
+    ├── serviceaccount.yaml    # Service account
+    ├── hpa.yaml               # Horizontal Pod Autoscaler
+    └── _helpers.tpl           # Template helpers
+```
+
+#### Customizing Deployments
+
+Edit environment-specific values:
+
+```yaml
+# helm/audit/values-production.yaml
+replicaCount: 3
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+```
+
+### CI/CD Pipeline
+
+The GitHub Actions workflow (`.github/workflows/deploy-microservices.yml`) automates:
+
+1. **Build**: Build Docker images for all microservices
+2. **Push**: Push images to GitHub Container Registry
+3. **Deploy**: Deploy to Kubernetes using Helm
+4. **Health Check**: Verify deployment health
+5. **Rollback**: Automatic rollback on failure
+
+#### Required GitHub Secrets
+
+- `KUBECONFIG`: Base64-encoded kubeconfig file
+- `SLACK_WEBHOOK`: Slack webhook URL for notifications
+
+```bash
+# Encode kubeconfig
+cat ~/.kube/config | base64 -w 0
+```
+
+#### Manual Workflow Trigger
+
+```bash
+# Trigger deployment via GitHub CLI
+gh workflow run deploy-microservices.yml \
+  -f environment=production \
+  -f service=audit
+```
+
+### Monitoring and Observability
+
+#### Metrics
+
+Each service exposes Prometheus metrics on port 9090:
+
+```bash
+# Port-forward to access metrics
+kubectl port-forward svc/audit 9090:9090 -n todo-app-production
+
+# Access metrics
+curl http://localhost:9090/metrics
+```
+
+#### Logs
+
+```bash
+# View service logs
+kubectl logs -f deployment/audit -n todo-app-production
+
+# View Dapr sidecar logs
+kubectl logs -f deployment/audit -c daprd -n todo-app-production
+
+# View logs from all pods
+kubectl logs -l app.kubernetes.io/name=audit -n todo-app-production --tail=100
+```
+
+#### Dapr Dashboard
+
+```bash
+# Launch Dapr dashboard for Kubernetes
+dapr dashboard -k -p 9999
+
+# Access at http://localhost:9999
+```
+
+### Scaling
+
+#### Manual Scaling
+
+```bash
+# Scale deployment
+kubectl scale deployment audit --replicas=5 -n todo-app-production
+
+# Verify scaling
+kubectl get deployment audit -n todo-app-production
+```
+
+#### Horizontal Pod Autoscaling
+
+HPA is configured in production:
+
+```bash
+# Check HPA status
+kubectl get hpa -n todo-app-production
+
+# Describe HPA
+kubectl describe hpa audit -n todo-app-production
+```
+
+### Troubleshooting Kubernetes Deployments
+
+#### Pods Not Starting
+
+```bash
+# Check pod status
+kubectl get pods -n todo-app-production
+
+# Describe pod for events
+kubectl describe pod <pod-name> -n todo-app-production
+
+# Check pod logs
+kubectl logs <pod-name> -n todo-app-production
+```
+
+#### Service Not Reachable
+
+```bash
+# Check service endpoints
+kubectl get endpoints -n todo-app-production
+
+# Test service connectivity
+kubectl run test-pod --image=curlimages/curl --rm -i --restart=Never -n todo-app-production -- \
+  curl -v http://audit:8001/health
+```
+
+#### Dapr Sidecar Issues
+
+```bash
+# Check Dapr sidecar status
+kubectl logs <pod-name> -c daprd -n todo-app-production
+
+# Verify Dapr components
+kubectl get components -n todo-app-production
+
+# Check Dapr configuration
+kubectl get configuration -n todo-app-production
+```
+
 ## Support
 
 For issues or questions:
+
+### Local Development
 1. Check the troubleshooting section above
 2. Review logs: `docker-compose logs -f`
 3. Check Dapr logs: `dapr logs --app-id <app-id>`
 4. Consult the project documentation in `specs/011-event-driven-microservices/`
+
+### Kubernetes Deployment
+1. Run health checks: `./scripts/health-check.sh todo-app-production`
+2. Check pod logs: `kubectl logs <pod-name> -n todo-app-production`
+3. Review Dapr dashboard: `dapr dashboard -k`
+4. Consult deployment documentation above

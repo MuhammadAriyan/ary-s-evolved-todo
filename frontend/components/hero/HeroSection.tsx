@@ -29,7 +29,7 @@ export function HeroSection({ isAuthenticated = false }: HeroSectionProps) {
       <div className="relative z-10 w-full max-w-2xl">
         {/* Badge */}
         <div className="flex justify-center mb-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm px-4 py-1.5 text-xs text-white/70">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 backdrop-blur-sm px-4 py-1.5 text-xs text-text-tertiary">
             <Sparkles className="h-3.5 w-3.5 text-sky-400" />
             <span>Streamlined Task Management</span>
           </div>
@@ -98,7 +98,7 @@ export function HeroSection({ isAuthenticated = false }: HeroSectionProps) {
         <Card className="mt-8 border border-white/10 bg-black/40 backdrop-blur-md shadow-xl shadow-sky-500/5 overflow-hidden">
           <CardContent className="p-0">
             <div className="px-6 py-4 border-b border-white/10">
-              <h2 className="text-sm font-medium text-white/80 flex items-center gap-2">
+              <h2 className="text-sm font-medium text-text-secondary flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
                 Today's Focus
               </h2>

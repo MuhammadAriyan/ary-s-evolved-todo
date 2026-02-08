@@ -1,0 +1,14 @@
+apiVersion: v2
+name: recurring-task
+description: A Helm chart for Recurring Task microservice
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - recurring-task
+  - microservice
+  - dapr
+  - event-driven
+maintainers:
+  - name: Ary
+    email: ary@example.com

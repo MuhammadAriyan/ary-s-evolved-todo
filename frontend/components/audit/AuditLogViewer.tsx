@@ -1,4 +1,4 @@
-"""Audit log viewer component with timeline display."""
+// Audit log viewer component with timeline display.
 'use client';
 
 import { useState, useEffect } from 'react';

@@ -103,7 +103,7 @@ export function Footer() {
           {/* Navigation */}
           {navigation.sections.map((section) => (
             <div key={section.id}>
-              <h3 className="text-sm font-semibold text-white/80 mb-4 font-chelsea">{section.name}</h3>
+              <h3 className="text-sm font-semibold text-text-secondary mb-4 font-chelsea">{section.name}</h3>
               <ul className="space-y-3">
                 {section.items.map((item) => (
                   <li key={item.name}>

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LogIn, Mail, Lock, Chrome } from "lucide-react"
 import Link from "next/link"
+import { devLog } from "@/lib/utils"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -23,7 +24,7 @@ export default function LoginPage() {
   // Auto-redirect if user is already logged in
   useEffect(() => {
     if (!isPending && session) {
-      console.log('User already logged in, redirecting to /todo')
+      devLog('User already logged in, redirecting to /todo')
       router.replace("/todo")
     }
   }, [session, isPending, router])
@@ -32,7 +33,7 @@ export default function LoginPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       // The useSession hook will automatically refetch
-      console.log('Periodic session check:', { isPending, hasSession: !!session })
+      devLog('Periodic session check:', { isPending, hasSession: !!session })
     }, 3000)
 
     return () => clearInterval(interval)

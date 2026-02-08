@@ -1,10 +1,10 @@
-"""Search bar component with autocomplete and filters."""
+// Search bar component with autocomplete and filters.
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Search, X, Filter, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { debounce } from 'lodash';
+import { debounce } from '@/lib/utils';
 
 interface SearchBarProps {
   onSearch?: (query: string, filters: SearchFilters) => void;

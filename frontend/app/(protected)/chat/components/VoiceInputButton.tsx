@@ -41,7 +41,7 @@ export function VoiceInputButton({ onTranscript, className }: VoiceInputButtonPr
         className={cn(
           'p-2 rounded-full transition-all duration-200',
           'bg-white/5 hover:bg-white/10 border border-white/10',
-          'text-white/70 hover:text-white',
+          'text-text-tertiary hover:text-white',
           'disabled:opacity-50 disabled:cursor-not-allowed'
         )}
         title={`Switch to ${language === 'en-US' ? 'Urdu' : 'English'}`}
@@ -63,7 +63,7 @@ export function VoiceInputButton({ onTranscript, className }: VoiceInputButtonPr
             ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse'
             : isProcessing
             ? 'bg-aura-purple/20 border-aura-purple/50 text-aura-purple'
-            : 'bg-white/5 hover:bg-white/10 border-white/10 text-white/70 hover:text-white',
+            : 'bg-white/5 hover:bg-white/10 border-white/10 text-text-tertiary hover:text-white',
           'disabled:cursor-wait'
         )}
         title={
@@ -85,7 +85,7 @@ export function VoiceInputButton({ onTranscript, className }: VoiceInputButtonPr
 
       {/* Model loading progress */}
       {isModelLoading && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 p-2 rounded-lg bg-aura-purple/20 backdrop-blur-sm border border-aura-purple/30 text-sm text-white/80">
+        <div className="absolute bottom-full left-0 right-0 mb-2 p-2 rounded-lg bg-aura-purple/20 backdrop-blur-sm border border-aura-purple/30 text-sm text-text-secondary">
           <div className="flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>Loading voice model... {modelLoadProgress}%</span>
@@ -101,7 +101,7 @@ export function VoiceInputButton({ onTranscript, className }: VoiceInputButtonPr
 
       {/* Transcript preview */}
       {(isListening || transcript === 'Transcribing...') && transcript && !isModelLoading && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 p-2 rounded-lg bg-black/50 backdrop-blur-sm border border-white/10 text-sm text-white/80">
+        <div className="absolute bottom-full left-0 right-0 mb-2 p-2 rounded-lg bg-black/50 backdrop-blur-sm border border-white/10 text-sm text-text-secondary">
           <div className="flex items-center gap-2">
             {transcript === 'Transcribing...' && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>{transcript}</span>

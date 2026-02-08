@@ -208,7 +208,7 @@ export function Testimonial() {
                     height="18"
                     viewBox="0 0 16 16"
                     fill="none"
-                    className="relative z-10 text-white/70 group-hover:text-sky-cyan-400 transition-colors"
+                    className="relative z-10 text-text-tertiary group-hover:text-sky-cyan-400 transition-colors"
                   >
                     <path
                       d="M10 12L6 8L10 4"
@@ -230,7 +230,7 @@ export function Testimonial() {
                     height="18"
                     viewBox="0 0 16 16"
                     fill="none"
-                    className="relative z-10 text-white/70 group-hover:text-sky-cyan-400 transition-colors"
+                    className="relative z-10 text-text-tertiary group-hover:text-sky-cyan-400 transition-colors"
                   >
                     <path
                       d="M6 4L10 8L6 12"

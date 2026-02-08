@@ -30,12 +30,12 @@ export function NotchHeader({
           <div className="flex items-center gap-1">
             {isAuthenticated && (
               <>
-                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
+                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-text-tertiary hover:text-white hover:bg-white/10">
                   <Link href="/todo" aria-label="Todo List">
                     <ClipboardList className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
+                <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-text-tertiary hover:text-white hover:bg-white/10">
                   <Link href="/chat" aria-label="AI Chat">
                     <MessageSquare className="h-4 w-4" />
                   </Link>
@@ -44,7 +44,7 @@ export function NotchHeader({
             )}
 
             {linkedinUrl && (
-              <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
+              <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-text-tertiary hover:text-white hover:bg-white/10">
                 <a
                   href={linkedinUrl}
                   target="_blank"
@@ -57,7 +57,7 @@ export function NotchHeader({
             )}
 
             {githubUrl && (
-              <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
+              <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-text-tertiary hover:text-white hover:bg-white/10">
                 <a
                   href={githubUrl}
                   target="_blank"

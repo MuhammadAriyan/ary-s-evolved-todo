@@ -185,7 +185,7 @@ export function RecurringPatternForm({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm text-white/70">
+      <div className="flex items-center gap-2 text-sm text-text-tertiary">
         <Repeat className="h-4 w-4" />
         <span>Configure Recurring Pattern</span>
       </div>
@@ -354,7 +354,7 @@ export function RecurringPatternForm({
       {/* T116: Visual preview of pattern */}
       {currentPattern && (
         <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-          <div className="text-sm font-medium text-white/70 mb-2">Preview:</div>
+          <div className="text-sm font-medium text-text-tertiary mb-2">Preview:</div>
           <div className="text-white">{patternDescription}</div>
           <div className="text-xs text-white/40 mt-2 font-mono">{currentPattern}</div>
         </div>

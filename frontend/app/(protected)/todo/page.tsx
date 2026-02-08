@@ -3,9 +3,9 @@
 import { useState, useEffect, useMemo, Suspense } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useSession } from "@/lib/auth-client"
 import { useTasks } from "@/hooks/useTasks"
+import { devLog } from "@/lib/utils"
 import { TaskList } from "./components/TaskList"
 import { TaskForm } from "./components/TaskForm"
 import { TaskFilters } from "./components/TaskFilters"
@@ -43,9 +43,7 @@ const TaskAnalyticsCard = dynamic(
   }
 )
 
-const queryClient = new QueryClient()
-
-function TodoPageContent() {
+export default function TodoPage() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
   const [showForm, setShowForm] = useState(false)
@@ -73,29 +71,82 @@ function TodoPageContent() {
 
   useEffect(() => {
     // Add debug logging to understand session state
-    console.log('Session check:', { isPending, session, hasUser: !!session?.user })
+    devLog('Session check:', { isPending, session, hasUser: !!session?.user })
 
     // Only redirect if:
     // 1. We're done loading (isPending === false)
     // 2. AND session is explicitly null (not undefined, which means still loading)
     if (!isPending && session === null) {
-      console.log('Redirecting to login - no session found')
+      devLog('Redirecting to login - no session found')
       // Use replace instead of push to avoid back button issues
       router.replace("/login")
     }
   }, [session, isPending, router])
 
-  // Periodic session check every 3 seconds to keep authentication fresh
+  // Event-driven session checking with 60-second fallback (T027-T030)
+  // Eliminates 20 checks per minute, zero overhead when idle
   useEffect(() => {
-    const interval = setInterval(() => {
-      console.log('Periodic session check (todo page):', {
+    let lastCheckTime = Date.now()
+    let isUserActive = false
+    let activityTimeout: NodeJS.Timeout | null = null
+
+    // Check session validity
+    const checkSession = () => {
+      const now = Date.now()
+      // Prevent excessive checks (max once per 5 seconds)
+      if (now - lastCheckTime < 5000) return
+
+      lastCheckTime = now
+      devLog('Event-driven session check:', {
         isPending,
         hasSession: !!session,
-        sessionUser: session?.user?.email
+        sessionUser: session?.user?.email,
+        trigger: 'event-driven'
       })
-    }, 3000)
+    }
 
-    return () => clearInterval(interval)
+    // Handle visibility change (user switches tabs)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        devLog('Tab became visible - checking session')
+        checkSession()
+      }
+    }
+
+    // Handle user activity (clicks, keypresses)
+    const handleUserActivity = () => {
+      if (!isUserActive) {
+        isUserActive = true
+        devLog('User activity detected - checking session')
+        checkSession()
+      }
+
+      // Reset activity flag after 30 seconds of inactivity
+      if (activityTimeout) clearTimeout(activityTimeout)
+      activityTimeout = setTimeout(() => {
+        isUserActive = false
+      }, 30000)
+    }
+
+    // 60-second fallback polling for edge cases
+    const fallbackInterval = setInterval(() => {
+      devLog('Fallback session check (60s interval)')
+      checkSession()
+    }, 60000)
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    document.addEventListener('click', handleUserActivity, { passive: true })
+    document.addEventListener('keypress', handleUserActivity, { passive: true })
+
+    // Cleanup
+    return () => {
+      clearInterval(fallbackInterval)
+      if (activityTimeout) clearTimeout(activityTimeout)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      document.removeEventListener('click', handleUserActivity)
+      document.removeEventListener('keypress', handleUserActivity)
+    }
   }, [session, isPending])
 
   // Filter tasks by search query
@@ -155,7 +206,7 @@ function TodoPageContent() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/50 mx-auto"></div>
-          <p className="text-white/60 text-sm">Checking authentication...</p>
+          <p className="text-text-muted text-sm">Checking authentication...</p>
         </div>
       </div>
     )
@@ -211,7 +262,7 @@ function TodoPageContent() {
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold text-white sm:text-3xl font-chelsea">My Todos</h1>
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-text-muted">
               Manage your tasks and stay organized
             </p>
             {selectedTag && (
@@ -236,7 +287,7 @@ function TodoPageContent() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode("list")}
-                className={`h-8 px-3 ${viewMode === "list" ? "bg-sky-cyan-500/20 text-sky-cyan-400" : "text-white/60 hover:text-white hover:bg-white/10"}`}
+                className={`h-8 px-3 ${viewMode === "list" ? "bg-sky-cyan-500/20 text-sky-cyan-400" : "text-text-muted hover:text-white hover:bg-white/10"}`}
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -244,7 +295,7 @@ function TodoPageContent() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode("calendar")}
-                className={`h-8 px-3 ${viewMode === "calendar" ? "bg-sky-cyan-500/20 text-sky-cyan-400" : "text-white/60 hover:text-white hover:bg-white/10"}`}
+                className={`h-8 px-3 ${viewMode === "calendar" ? "bg-sky-cyan-500/20 text-sky-cyan-400" : "text-text-muted hover:text-white hover:bg-white/10"}`}
               >
                 <CalendarDays className="h-4 w-4" />
               </Button>
@@ -254,7 +305,7 @@ function TodoPageContent() {
               variant="ghost"
               size="sm"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden border border-white/10 text-white/60 hover:text-white hover:bg-white/10"
+              className="md:hidden border border-white/10 text-text-muted hover:text-white hover:bg-white/10"
             >
               <Tag className="h-4 w-4 mr-1" />
               Tags
@@ -326,13 +377,5 @@ function TodoPageContent() {
         )}
       </div>
     </div>
-  )
-}
-
-export default function TodoPage() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TodoPageContent />
-    </QueryClientProvider>
   )
 }

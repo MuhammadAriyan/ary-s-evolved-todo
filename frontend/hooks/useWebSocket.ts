@@ -11,6 +11,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSession, authClient } from '@/lib/auth-client'
 import { WebSocketClient, WebSocketStatus, WebSocketMessage, createWebSocketClient } from '@/lib/websocket-client'
+import { devLog } from '@/lib/utils'
 
 // WebSocket URL - use environment variable or default
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8001/ws'
@@ -45,7 +46,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         try {
           const { data, error } = await authClient.token()
           if (data?.token) {
-            console.log('✅ JWT token retrieved for WebSocket')
+            devLog('✅ JWT token retrieved for WebSocket')
             setToken(data.token)
           } else if (error) {
             console.error('❌ Failed to retrieve JWT token for WebSocket:', error)
@@ -75,18 +76,18 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     }
 
     // Create WebSocket client
-    console.log('Creating WebSocket client')
+    devLog('Creating WebSocket client')
     const client = createWebSocketClient({
       url: WS_URL,
       token,
       onMessage: (message) => {
-        console.log('WebSocket message received:', message.type)
+        devLog('WebSocket message received:', message.type)
         if (onMessage) {
           onMessage(message)
         }
       },
       onStatusChange: (newStatus) => {
-        console.log('WebSocket status changed:', newStatus)
+        devLog('WebSocket status changed:', newStatus)
         setStatus(newStatus)
         setIsConnected(newStatus === 'connected')
       },
@@ -105,7 +106,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
     // Cleanup on unmount
     return () => {
-      console.log('Cleaning up WebSocket client')
+      devLog('Cleaning up WebSocket client')
       client.disconnect()
       clientRef.current = null
     }

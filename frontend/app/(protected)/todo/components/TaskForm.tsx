@@ -1,9 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { CreateTaskInput, Task } from "@/types/task"
+import { CreateTaskInput, Task, RecurringPattern } from "@/types/task"
 import { useCreateTask, useUpdateTask } from "@/hooks/useTasks"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { RecurringPatternForm } from "@/components/tasks/RecurringPatternForm"
 import { X } from "lucide-react"
 
 const taskSchema = z.object({
@@ -32,6 +34,11 @@ interface TaskFormProps {
 export function TaskForm({ task, onClose }: TaskFormProps) {
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
+
+  const [showAdvancedRecurring, setShowAdvancedRecurring] = useState(false)
+  const [recurringPattern, setRecurringPattern] = useState<RecurringPattern | null>(
+    task?.recurring_pattern || null
+  )
 
   const {
     register,
@@ -65,6 +72,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         : [],
       due_date: data.due_date || undefined,
       recurring: data.recurring || undefined,
+      recurring_pattern: recurringPattern || undefined,
     }
 
     if (task) {
@@ -147,20 +155,51 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
 
             <div className="space-y-2">
               <Label htmlFor="recurring">Recurring</Label>
-              <Select
-                defaultValue={watch("recurring") || "none"}
-                onValueChange={(value) => setValue("recurring", value === "none" ? "" : value as "" | "daily" | "weekly" | "monthly")}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  defaultValue={watch("recurring") || "none"}
+                  onValueChange={(value) => {
+                    setValue("recurring", value === "none" ? "" : value as "" | "daily" | "weekly" | "monthly")
+                    if (value === "none") {
+                      setShowAdvancedRecurring(false)
+                      setRecurringPattern(null)
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+                {watch("recurring") && watch("recurring") !== "" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowAdvancedRecurring(!showAdvancedRecurring)}
+                  >
+                    {showAdvancedRecurring ? "Simple" : "Advanced"}
+                  </Button>
+                )}
+              </div>
+
+              {showAdvancedRecurring && watch("recurring") && watch("recurring") !== "" && (
+                <div className="mt-4 p-4 border border-white/20 rounded-lg bg-white/5">
+                  <RecurringPatternForm
+                    initialPattern={recurringPattern?.customCron || ""}
+                    onPatternChange={(pattern, description) => {
+                      setRecurringPattern({
+                        type: 'custom',
+                        customCron: pattern,
+                      })
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
 

@@ -1,0 +1,46 @@
+# Production environment values for audit
+replicaCount: 3
+
+image:
+  repository: ghcr.io/your-org/todo-audit
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+podAnnotations:
+  dapr.io/enabled: "true"
+  dapr.io/app-id: "audit"
+  dapr.io/app-port: "8001"
+  dapr.io/log-level: "info"
+  dapr.io/enable-metrics: "true"
+  dapr.io/metrics-port: "9090"
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+env:
+  - name: ENVIRONMENT
+    value: "production"
+  - name: LOG_LEVEL
+    value: "info"
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: database-secret-production
+        key: url
+  - name: SENTRY_DSN
+    valueFrom:
+      secretKeyRef:
+        name: monitoring-secrets
+        key: sentry-dsn

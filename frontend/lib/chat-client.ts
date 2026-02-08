@@ -2,6 +2,7 @@
  * Chat API client for AI Todo Chatbot
  */
 import { apiClient } from './api-client'
+import { devLog } from './utils'
 import type {
   Conversation,
   ConversationWithMessages,
@@ -221,7 +222,7 @@ export async function* streamMessage(
 
   if (!response.ok) {
     // Log detailed error information for debugging
-    console.error('🔴 Chat stream error:', {
+    devLog('🔴 Chat stream error:', {
       status: response.status,
       statusText: response.statusText,
       url: response.url,
@@ -233,10 +234,10 @@ export async function* streamMessage(
     try {
       const errorData = await response.json()
       errorDetail = errorData.detail || errorData.message || response.statusText
-      console.error('🔴 Error response body:', errorData)
+      devLog('🔴 Error response body:', errorData)
     } catch (e) {
       // Response body is not JSON, use statusText
-      console.error('🔴 Could not parse error response:', e)
+      devLog('🔴 Could not parse error response:', e)
     }
 
     // Create detailed error messages
@@ -282,7 +283,7 @@ export async function* streamMessage(
           const jsonStr = line.slice(6) // Remove 'data: ' prefix
           try {
             const event = JSON.parse(jsonStr) as StreamEvent
-            console.log('📥 SSE Event received:', event.type, event)
+            devLog('📥 SSE Event received:', event.type, event)
             yield event
           } catch (e) {
             console.warn('Failed to parse SSE event:', jsonStr)
@@ -302,7 +303,7 @@ export async function* streamMessage(
       }
     }
   } catch (error) {
-    console.error('Stream processing error:', error)
+    devLog('Stream processing error:', error)
     throw error
   } finally {
     reader.releaseLock()

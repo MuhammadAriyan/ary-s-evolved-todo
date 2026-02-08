@@ -3,22 +3,26 @@
  * T043: Extended with WebSocket real-time synchronization
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from "@tanstack/react-query"
 import { useEffect, useState, useCallback } from "react"
 import { apiClient } from "@/lib/api-client"
 import { useSession, authClient } from "@/lib/auth-client"
 import { useWebSocket } from "./useWebSocket"
 import type { Task, CreateTaskInput, UpdateTaskInput } from "@/types/task"
 import type { WebSocketMessage } from "@/lib/websocket-client"
+import { devLog } from "@/lib/utils"
 
 const TASKS_QUERY_KEY = ["tasks"]
 
-export function useTasks(filters?: {
-  tag?: string
-  priority?: string
-  completed?: boolean
-  sort?: string
-}) {
+export function useTasks(
+  filters?: {
+    tag?: string
+    priority?: string
+    completed?: boolean
+    sort?: string
+  },
+  options?: Omit<UseQueryOptions<Task[], Error>, 'queryKey' | 'queryFn'>
+) {
   const { data: session } = useSession()
   const [tokenReady, setTokenReady] = useState(false)
   const queryClient = useQueryClient()
@@ -32,22 +36,22 @@ export function useTasks(filters?: {
           const { data, error } = await authClient.token()
 
           if (data?.token) {
-            console.log("✅ JWT token retrieved successfully")
-            console.log("Token preview:", data.token.substring(0, 50) + "...")
+            devLog("✅ JWT token retrieved successfully")
+            devLog("Token preview:", data.token.substring(0, 50) + "...")
             apiClient.setToken(data.token)
             setTokenReady(true)
           } else if (error) {
-            console.error("❌ Failed to retrieve JWT token:", error)
+            devLog("❌ Failed to retrieve JWT token:", error)
             apiClient.clearToken()
             setTokenReady(false)
           }
         } catch (err) {
-          console.error("❌ Error fetching JWT token:", err)
+          devLog("❌ Error fetching JWT token:", err)
           apiClient.clearToken()
           setTokenReady(false)
         }
       } else {
-        console.log("⚠️ No session, clearing token")
+        devLog("⚠️ No session, clearing token")
         apiClient.clearToken()
         setTokenReady(false)
       }
@@ -62,7 +66,7 @@ export function useTasks(filters?: {
       const eventType = message.event_type
       const task = message.task
 
-      console.log(`📡 Real-time update: ${eventType}`, task)
+      devLog(`📡 Real-time update: ${eventType}`, task)
 
       // Update query cache based on event type
       queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, (old = []) => {
@@ -89,9 +93,9 @@ export function useTasks(filters?: {
         }
       })
     } else if (message.type === 'replay_start') {
-      console.log(`📡 Replaying ${message.count} missed events since ${message.since}`)
+      devLog(`📡 Replaying ${message.count} missed events since ${message.since}`)
     } else if (message.type === 'replay_complete') {
-      console.log(`📡 Replay complete: ${message.count} events`)
+      devLog(`📡 Replay complete: ${message.count} events`)
     }
   }, [queryClient])
 
@@ -100,7 +104,7 @@ export function useTasks(filters?: {
     enabled: !!session?.user && tokenReady,
     onMessage: handleWebSocketMessage,
     onError: (error) => {
-      console.error('WebSocket error in useTasks:', error)
+      devLog('WebSocket error in useTasks:', error)
     }
   })
 
@@ -118,6 +122,7 @@ export function useTasks(filters?: {
       return apiClient.get<Task[]>(`/api/v1/tasks${query ? `?${query}` : ""}`)
     },
     enabled: !!session?.user && tokenReady, // Only run query if user is authenticated AND token is ready
+    ...options, // Merge provided options
   })
 
   return {

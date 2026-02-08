@@ -52,11 +52,11 @@ function Calendar({
           defaultClassNames.nav
         ),
         button_previous: cn(
-          "h-[--cell-size] w-[--cell-size] select-none p-0 rounded-lg border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white hover:border-sky-cyan-500/30 transition-all",
+          "h-[--cell-size] w-[--cell-size] select-none p-0 rounded-lg border border-white/10 bg-white/5 text-text-tertiary hover:bg-white/10 hover:text-white hover:border-sky-cyan-500/30 transition-all",
           defaultClassNames.button_previous
         ),
         button_next: cn(
-          "h-[--cell-size] w-[--cell-size] select-none p-0 rounded-lg border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white hover:border-sky-cyan-500/30 transition-all",
+          "h-[--cell-size] w-[--cell-size] select-none p-0 rounded-lg border border-white/10 bg-white/5 text-text-tertiary hover:bg-white/10 hover:text-white hover:border-sky-cyan-500/30 transition-all",
           defaultClassNames.button_next
         ),
         month_caption: cn(
@@ -199,7 +199,7 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "data-[selected-single=true]:bg-sky-cyan-500 data-[selected-single=true]:text-white data-[range-middle=true]:bg-sky-cyan-500/20 data-[range-middle=true]:text-white data-[range-start=true]:bg-sky-cyan-500 data-[range-start=true]:text-white data-[range-end=true]:bg-sky-cyan-500 data-[range-end=true]:text-white group-data-[focused=true]/day:border-sky-cyan-500/50 group-data-[focused=true]/day:ring-sky-cyan-500/20 flex aspect-square h-auto w-full min-w-[--cell-size] flex-col gap-1 font-normal leading-none text-white/70 hover:bg-white/10 hover:text-white data-[range-end=true]:rounded-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-[3px] [&>span]:text-xs [&>span]:opacity-70 transition-all",
+        "data-[selected-single=true]:bg-sky-cyan-500 data-[selected-single=true]:text-white data-[range-middle=true]:bg-sky-cyan-500/20 data-[range-middle=true]:text-white data-[range-start=true]:bg-sky-cyan-500 data-[range-start=true]:text-white data-[range-end=true]:bg-sky-cyan-500 data-[range-end=true]:text-white group-data-[focused=true]/day:border-sky-cyan-500/50 group-data-[focused=true]/day:ring-sky-cyan-500/20 flex aspect-square h-auto w-full min-w-[--cell-size] flex-col gap-1 font-normal leading-none text-text-tertiary hover:bg-white/10 hover:text-white data-[range-end=true]:rounded-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-[3px] [&>span]:text-xs [&>span]:opacity-70 transition-all",
         defaultClassNames.day,
         className
       )}

@@ -76,7 +76,7 @@ export function UserDropdown({ userName, userEmail }: UserDropdownProps) {
 
         {/* Settings */}
         <DropdownMenuItem
-          className="cursor-pointer focus:bg-white/10 text-white/80 hover:text-white"
+          className="cursor-pointer focus:bg-white/10 text-text-secondary hover:text-white"
           disabled
         >
           <Settings className="mr-2 h-4 w-4" strokeWidth={1.5} />
@@ -87,7 +87,7 @@ export function UserDropdown({ userName, userEmail }: UserDropdownProps) {
 
         {/* Logout */}
         <DropdownMenuItem
-          className="cursor-pointer focus:bg-white/10 text-white/80 hover:text-white"
+          className="cursor-pointer focus:bg-white/10 text-text-secondary hover:text-white"
           onClick={handleLogout}
           disabled={isLoggingOut}
         >

@@ -92,7 +92,7 @@ export function NotificationToast({
             <h4 className="text-white font-semibold text-sm mb-1">
               {notification.title}
             </h4>
-            <p className="text-white/80 text-sm">{notification.message}</p>
+            <p className="text-text-secondary text-sm">{notification.message}</p>
             {notification.timestamp && (
               <p className="text-white/40 text-xs mt-1">
                 {new Date(notification.timestamp).toLocaleTimeString()}
